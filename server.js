@@ -1,69 +1,160 @@
 /*
  * Copyright (c) 2012, Joyent, Inc. All rights reserved.
  *
- * Main entry-point for the Boilerplate API.
+ * A brief overview of this source file: what is its purpose.
  */
 
-var filed = require('filed');
+var fs = require('fs');
+var async = require('async');
 var restify = require('restify');
-var uuid = require('node-uuid');
 var Logger = require('bunyan');
+var path = require('path');
 
-
-var log = new Logger({
-    name: 'boilerplateapi',
-    level: 'debug',
-    serializers: {
-        err: Logger.stdSerializers.err,
-        req: Logger.stdSerializers.req,
-        res: restify.bunyan.serializers.response
-    }
-});
-
-
+var log = new Logger({ name: 'HTTP Storage API' });
+log.info('hi');
 
 var server = restify.createServer({
-    name: 'Boilerplate API',
-    log: log
+    name: 'HTTPStorageAPI'
 });
 
-// TODO: Add usage of the restify auditLog plugin.
+var DATA_DIR = process.env.DATA_DIR || '/var/tmp/mako/';
+fs.mkdir(DATA_DIR, function (err) {
+	if (err && err.code !== 'EEXIST')
+		throw (err);
 
-
-// '/eggs/...' endpoints.
-var eggs = {}; // My lame in-memory database.
-server.get({path: '/eggs', name: 'ListEggs'}, function (req, res, next) {
-    req.log.info('ListEggs start');
-    var eggsArray = [];
-    Object.keys(eggs).forEach(function (u) { eggsArray.push(eggs[u]); });
-    res.send(eggsArray);
-    return next();
-});
-server.post({path: '/eggs', name: 'CreateEgg'}, function (req, res, next) {
-    var newUuid = uuid();
-    var newEgg = {'uuid': newUuid};
-    eggs[newUuid] = newEgg;
-    res.send(newEgg);
-    return next();
-});
-server.get({path: '/eggs/:uuid', name: 'GetEgg'}, function (req, res, next) {
-    var egg = eggs[req.params.uuid];
-    if (!egg) {
-        return next(new restify.ResourceNotFoundError('No such egg.'));
-    }
-    res.send(egg);
-    return next();
+	server.listen(4444, function () {
+    		log.info({url: server.url}, '%s listening', server.name);
+	});
 });
 
+/*
+ * Return a list of files managed on this storage node.
+ */
+server.get('/', function (req, res, next) {
+	log.info('GET /');
 
-// TODO: static serve the docs, favicon, etc.
-//  waiting on https://github.com/mcavage/node-restify/issues/56 for this.
-server.get('/favicon.ico', function (req, res, next) {
-    filed(__dirname + '/docs/media/img/favicon.ico').pipe(res);
-    next();
+	fs.readdir(DATA_DIR, function (err, files) {
+		if (err)
+			throw (err);
+
+		var results = [];
+
+		async.forEach(files, function (file, callback) {
+			fs.stat(path.join(DATA_DIR, file),
+			    function (suberr, stat) {
+				if (suberr)
+					return (callback(suberr));
+
+				results.push({
+				    id: file,
+				    blksize: stat.blksize,
+				    size: stat.size,
+				    mtime: stat.mtime,
+				    ctime: stat.ctime
+				});
+
+				return (callback(null));
+			});
+		}, function (suberr) {
+			if (suberr) {
+				log.error(suberr.message);
+				res.send(503);
+				return (next());
+			}
+
+			res.send(results);
+			res.end();
+			return (next());
+		});
+	});
 });
 
+server.head('/', function (req, res, next) {
+	log.info('HEAD /');
 
-server.listen(8080, function () {
-    log.info({url: server.url}, '%s listening', server.name);
+	fs.stat(DATA_DIR, function (err, stat) {
+		if (err)
+			throw (err);
+
+		/* XXX This is busted */
+		res.write(stat.size - 2);
+		res.end();
+		return (next());
+	});
+});
+
+server.get('/:id', function (req, res, next) {
+	var id = req.params.id;
+	log.info('GET /' + id);
+
+	var file = path.join(DATA_DIR, id);
+	var stream = fs.createReadStream(file);
+
+	stream.on('error', function (err) {
+		if (err.code === 'ENOENT') {
+			log.warn('Object ' + id + 'not found: ' +
+			    err.message);
+
+			res.send(404);
+			return (next());
+		}
+
+		log.error('Error when creating read stream for ' + id +
+		    ': ' + err.message);
+		res.send(503);
+		return (next());
+	});
+
+	stream.pipe(res);
+	log.info(req);
+
+	stream.on('end', function (err) {
+		if (err)
+			throw (err);
+
+		console.log('All done!');
+		res.end();
+		return (next());
+	});
+});
+
+server.put('/:id', function (req, res, next) {
+	var id = req.params.id;
+	log.info('PUT /' + id);
+
+	var file = path.join(DATA_DIR, id);
+
+	var wstream = fs.createWriteStream(file, { flags: 'w' });
+	req.pipe(wstream);
+
+	req.on('end', function (suberr) {
+		if (suberr)
+			throw (suberr);
+		res.send(204);
+		return (next());
+	});
+});
+
+server.del('/:id', function (req, res, next) {
+	var id = req.params.id;
+	log.info('DELETE /' + id);
+
+	var file = path.join(DATA_DIR, id);
+
+	fs.unlink(file, function (err) {
+		if (err.code === 'ENOENT') {
+			log.warn('Object ' + id + 'not found: ' +
+			    err.message);
+			res.send(404);
+			return (next());
+		} else if (err) {
+			log.error('Error when deleting ' + id +
+			    ': ' + err.message);
+			res.send(503);
+			return (next());
+		}
+
+		res.send(204);
+		return (next());
+	});
 });
