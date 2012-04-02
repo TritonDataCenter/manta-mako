@@ -124,6 +124,12 @@ server.put('/:id', function (req, res, next) {
 
 	var file = path.join(DATA_DIR, id);
 
+	try {
+		fs.statSync(file);
+	} catch (err) {
+		console.log('There was some error: ' + err.message);
+	}
+
 	var wstream = fs.createWriteStream(file, { flags: 'w' });
 	req.pipe(wstream);
 
@@ -142,7 +148,7 @@ server.del('/:id', function (req, res, next) {
 	var file = path.join(DATA_DIR, id);
 
 	fs.unlink(file, function (err) {
-		if (err.code === 'ENOENT') {
+		if (err && err.code === 'ENOENT') {
 			log.warn('Object ' + id + 'not found: ' +
 			    err.message);
 			res.send(404);

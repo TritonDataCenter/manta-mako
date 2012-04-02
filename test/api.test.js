@@ -24,24 +24,29 @@ var options = {
 var assertFilesSame = function (first, second, t, callback) {
 	exec('diff ' + first + ' ' + second,
 	    function (err, stdout, stderr) {
-		t.equal(err, null, first + ' and ' + second + ' are ' +
-		    'not the same');
-		callback(null);
+		t.equal(err, null, first + ' and ' + second + ' are the same');
+		return (callback(null));
+	});
+};
+
+var createFile = function (name, size, callback) {
+	var blocks = size / 131072;
+	exec('dd if=/dev/urandom of=' + name + ' count=' + blocks + ' bs=128k',
+	    function (err, stdout, stderr) {
+		if (err)
+			throw (err);
+		return (callback(null));
 	});
 };
 
 test('setup', function (t) {
 	fs.mkdirSync(dir);
-
-	exec('dd if=/dev/urandom of=' + file + ' count=80 bs=128k',
-	    function (err, stdout, stderr) {
-		if (err)
-			throw (err);
+	createFile(file, 10 * 1024 * 1024, function () {
 		t.end();
 	});
 });
 
-test('put an object', function (t) {
+test('put 10 MiB object', function (t) {
 	options.method = 'PUT';
 
 	var req = http.request(options, function (res) {
@@ -51,8 +56,9 @@ test('put an object', function (t) {
 		t.end();
 	});
 
-	req.on('error', function (e) {
-		console.log('problem with request: ' + e.message);
+	req.on('error', function (err) {
+		console.log('problem with request: ' + err.message);
+		t.ok(false, err.message);
 		t.end();
 	});
 
@@ -62,12 +68,36 @@ test('put an object', function (t) {
 	});
 });
 
-test('get an object', function (t) {
+test('put existing object', function (t) {
+	options.method = 'PUT';
+
+	var req = http.request(options, function (res) {
+		console.log('STATUS: ' + res.statusCode);
+		console.log('HEADERS: ' + JSON.stringify(res.headers));
+		t.equal(res.statusCode, 409);
+		t.end();
+	});
+
+	req.on('error', function (err) {
+		console.log('problem with request: ' + err.message);
+		t.ok(false, err.message);
+		t.end();
+	});
+
+	fs.readFile(file, function (err, contents) {
+		req.write(contents);
+		req.end();
+	});
+});
+
+test('get 10 MiB object', function (t) {
 	options.method = 'GET';
 
 	var req = http.request(options, function (res) {
 		console.log('STATUS: ' + res.statusCode);
 		console.log('HEADERS: ' + JSON.stringify(res.headers));
+
+		t.equal(res.statusCode, 200);
 
 		var wstream = fs.createWriteStream(file + '.new');
 		res.pipe(wstream);
@@ -81,14 +111,71 @@ test('get an object', function (t) {
 	});
 	req.end();
 
-	req.on('error', function (e) {
-		console.log('problem with request: ' + e.message);
+	req.on('error', function (err) {
+		console.log('problem with request: ' + err.message);
+		t.ok(false, err.message);
+		t.end();
+	});
+});
+
+test('delete 10 MiB object', function (t) {
+	options.method = 'DELETE';
+
+	var req = http.request(options, function (res) {
+		console.log('STATUS: ' + res.statusCode);
+		console.log('HEADERS: ' + JSON.stringify(res.headers));
+
+		t.equal(res.statusCode, 204);
+
+		options.method = 'GET';
+
+		req = http.request(options, function (subres) {
+			console.log('STATUS: ' + subres.statusCode);
+			console.log('HEADERS: ' +
+			    JSON.stringify(subres.headers));
+
+			t.equal(subres.statusCode, 404);
+			t.end();
+		});
+		req.end();
+	});
+	req.end();
+
+	req.on('error', function (err) {
+		console.log('problem with request: ' + err.message);
+		t.ok(false, err.message);
+		t.end();
+	});
+});
+
+test('get nonexistent object', function (t) {
+	options.method = 'GET';
+
+	var req = http.request(options, function (res) {
+		console.log('STATUS: ' + res.statusCode);
+		console.log('HEADERS: ' + JSON.stringify(res.headers));
+		t.equal(res.statusCode, 404);
+		t.end();
+	});
+	req.end();
+
+	req.on('error', function (err) {
+		console.log('problem with request: ' + err.message);
+		t.ok(false, err.message);
 		t.end();
 	});
 });
 
 test('teardown', function (t) {
-//	fs.unlink('./data/10m-file', function (err) {
+	return (t.end());
+
+	fs.readdir(dir, function (err, files) {
+		if (err)
+			throw (err);
+
+		for (var ii = 0; ii < files.length; ii++)
+			fs.unlinkSync(path.join(dir, files[ii]));
+		fs.rmdirSync(dir);
 		t.end();
-//	});
+	});
 });
