@@ -75,8 +75,9 @@ server.head('/', function (req, res, next) {
 		if (err)
 			throw (err);
 
-		/* XXX This is busted */
-		res.write(stat.size - 2);
+		var count = stat.size - 2;
+		res.header('X-Mako-Object-Count', count);
+		res.send(204);
 		res.end();
 		return (next());
 	});
