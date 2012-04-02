@@ -11,7 +11,6 @@ var Logger = require('bunyan');
 var path = require('path');
 
 var log = new Logger({ name: 'HTTP Storage API' });
-log.info('hi');
 
 var server = restify.createServer({
     name: 'HTTPStorageAPI'
@@ -31,7 +30,7 @@ fs.mkdir(DATA_DIR, function (err) {
  * Return a list of files managed on this storage node.
  */
 server.get('/', function (req, res, next) {
-	log.info('GET /');
+	log.debug('GET /');
 
 	fs.readdir(DATA_DIR, function (err, files) {
 		if (err)
@@ -70,7 +69,7 @@ server.get('/', function (req, res, next) {
 });
 
 server.head('/', function (req, res, next) {
-	log.info('HEAD /');
+	log.debug('HEAD /');
 
 	fs.stat(DATA_DIR, function (err, stat) {
 		if (err)
@@ -85,12 +84,12 @@ server.head('/', function (req, res, next) {
 
 server.get('/:id', function (req, res, next) {
 	var id = req.params.id;
-	log.info('GET /' + id);
+	log.debug('GET /' + id);
 
 	var file = path.join(DATA_DIR, id);
-	var stream = fs.createReadStream(file);
+	var rstream = fs.createReadStream(file);
 
-	stream.on('error', function (err) {
+	rstream.on('error', function (err) {
 		if (err.code === 'ENOENT') {
 			log.warn('Object ' + id + 'not found: ' +
 			    err.message);
@@ -105,14 +104,11 @@ server.get('/:id', function (req, res, next) {
 		return (next());
 	});
 
-	stream.pipe(res);
-	log.info(req);
+	rstream.pipe(res);
 
-	stream.on('end', function (err) {
+	rstream.on('end', function (err) {
 		if (err)
 			throw (err);
-
-		console.log('All done!');
 		res.end();
 		return (next());
 	});
@@ -120,30 +116,48 @@ server.get('/:id', function (req, res, next) {
 
 server.put('/:id', function (req, res, next) {
 	var id = req.params.id;
-	log.info('PUT /' + id);
+	log.debug('PUT /' + id);
 
 	var file = path.join(DATA_DIR, id);
+	var errno = -1;
 
 	try {
 		fs.statSync(file);
 	} catch (err) {
-		console.log('There was some error: ' + err.message);
+		if (err && err.code === 'ENOENT') {
+			errno = 2;
+		} else if (err) {
+			log.error('Error when deleting ' + id +
+			    ': ' + err.message);
+			res.send(503);
+			return (next());
+		}
 	}
 
-	var wstream = fs.createWriteStream(file, { flags: 'w' });
-	req.pipe(wstream);
+	if (errno === 2) {
+		var wstream = fs.createWriteStream(file,
+		    { flags: 'w' });
+		req.pipe(wstream);
 
-	req.on('end', function (suberr) {
-		if (suberr)
-			throw (suberr);
-		res.send(204);
+		req.on('end', function (suberr) {
+			if (suberr)
+				throw (suberr);
+			res.send(204);
+			return (next());
+		});
+	} else {
+		/*
+		 * If the fs.stat() call succeeds, then the object with this ID
+		 * already exists and we shouldn't overwrite it.
+		 */
+		res.send(409);
 		return (next());
-	});
+	}
 });
 
 server.del('/:id', function (req, res, next) {
 	var id = req.params.id;
-	log.info('DELETE /' + id);
+	log.debug('DELETE /' + id);
 
 	var file = path.join(DATA_DIR, id);
 
