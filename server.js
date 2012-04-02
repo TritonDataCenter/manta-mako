@@ -146,6 +146,12 @@ server.put('/:id', function (req, res, next) {
 			res.send(204);
 			return (next());
 		});
+
+		req.on('error', function (suberr) {
+			log.error('Error writing file: ' + suberr.message);
+			res.send(503);
+			return (next());
+		});
 	} else {
 		/*
 		 * If the fs.stat() call succeeds, then the object with this ID
@@ -154,6 +160,7 @@ server.put('/:id', function (req, res, next) {
 		res.send(409);
 		return (next());
 	}
+
 });
 
 server.del('/:id', function (req, res, next) {

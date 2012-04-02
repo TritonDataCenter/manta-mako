@@ -6,19 +6,21 @@
 
 var test = require('tap').test;
 
-var cp = require('child_process'),
+var async = require('async'),
+    cp = require('child_process'),
     fs = require('fs'),
     http = require('http'),
-    path = require('path');
+    path = require('path'),
     uuid = require('node-uuid');
 
-var dir = '/var/tmp/test.mako.' + process.pid;
-var file = path.join(dir, uuid.v4());
+var TEST_DIR = '/var/tmp/test.mako.' + process.pid;
+var filename = uuid.v4();
+var file = path.join(TEST_DIR, filename);
 
 var options = {
 	host: 'localhost',
 	port: 4444,
-	path: '/' + path.basename(file)
+	path: '/' + filename
 };
 
 var assertFilesSame = function (first, second, t, callback) {
@@ -41,6 +43,7 @@ var createFile = function (name, size, callback) {
 
 var getNonexistentObject = function (t) {
 	options.method = 'GET';
+	options.path = '/' + filename;
 
 	var req = http.request(options, function (res) {
 		console.log('STATUS: ' + res.statusCode);
@@ -57,8 +60,24 @@ var getNonexistentObject = function (t) {
 	});
 };
 
+var getObjectCount = function (callback) {
+	options.method = 'HEAD';
+	options.path = '/';
+
+	var req = http.request(options, function (res) {
+		var count = parseInt(res.headers['x-mako-object-count'], 10);
+		return (callback(null, count));
+	});
+	req.end();
+
+	req.on('error', function (err) {
+		console.log('problem with request: ' + err.message);
+		return (callback(err));
+	});
+};
+
 test('setup', function (t) {
-	fs.mkdirSync(dir);
+	fs.mkdirSync(TEST_DIR);
 	createFile(file, 10 * 1024 * 1024, function () {
 		t.end();
 	});
@@ -70,6 +89,7 @@ test('get nonexistent object', function (t) {
 
 test('put 10 MiB object', function (t) {
 	options.method = 'PUT';
+	options.path = '/' + filename;
 
 	var req = http.request(options, function (res) {
 		console.log('STATUS: ' + res.statusCode);
@@ -92,6 +112,7 @@ test('put 10 MiB object', function (t) {
 
 test('put existing object', function (t) {
 	options.method = 'PUT';
+	options.path = '/' + filename;
 
 	var req = http.request(options, function (res) {
 		console.log('STATUS: ' + res.statusCode);
@@ -114,6 +135,7 @@ test('put existing object', function (t) {
 
 test('get 10 MiB object', function (t) {
 	options.method = 'GET';
+	options.path = '/' + filename;
 
 	var req = http.request(options, function (res) {
 		console.log('STATUS: ' + res.statusCode);
@@ -142,6 +164,7 @@ test('get 10 MiB object', function (t) {
 
 test('delete 10 MiB object', function (t) {
 	options.method = 'DELETE';
+	options.path = '/' + filename;
 
 	var req = http.request(options, function (res) {
 		console.log('STATUS: ' + res.statusCode);
@@ -174,7 +197,7 @@ test('HEAD / reports number of objects', function (t) {
 		console.log('STATUS: ' + res.statusCode);
 		console.log('HEADERS: ' + JSON.stringify(res.headers));
 
-		var count = parseInt(res.headers['x-mako-object-count']);
+		var count = parseInt(res.headers['x-mako-object-count'], 10);
 		t.ok(count !== NaN);
 		t.type(count, 'number', 'HEAD / returns a number');
 		t.end();
@@ -189,20 +212,68 @@ test('HEAD / reports number of objects', function (t) {
 });
 
 test('100s of small files', function (t) {
-	// XXX Not yet implemented
-	t.end();
+	getObjectCount(function (err, count) {
+		var files = [];
+		for (var ii = 0; ii < 200; ii++)
+			files.push(uuid.v4());
+
+		async.series([ function (callback) {
+			async.forEach(files, function (f, subcb) {
+				createFile(path.join(TEST_DIR, f),
+				    131072 * 10, function (suberr) {
+					return (subcb(suberr));
+				});
+			}, function (suberr) {
+				if (suberr) {
+					t.ok(false, suberr.message);
+					t.end();
+					return (callback(suberr));
+				}
+				return (callback(null));
+			});
+		}, function (callback) {
+			async.forEach(files, function (f, subcb) {
+				options.method = 'PUT';
+				options.path = '/' + f;
+
+				var req = http.request(options,
+				    function (res) {
+					t.equal(res.statusCode, 204);
+					return (subcb(null));
+				});
+
+				req.on('error', function (suberr) {
+					console.log('problem with request: ' +
+					    suberr.message);
+					t.ok(false, suberr.message);
+					t.end();
+				});
+
+				fs.readFile(path.join(TEST_DIR, f),
+				    function (suberr, contents) {
+					req.write(contents);
+					req.end();
+				});
+			}, function (suberr) {
+				return (callback(null));
+			});
+		}], function (suberr, results) {
+			getObjectCount(function (subsuberr, newCount) {
+				t.ok(count + 200 === newCount);
+				t.end();
+			});
+		});
+	});
 });
 
 test('teardown', function (t) {
-	return (t.end());
-
-	fs.readdir(dir, function (err, files) {
+	fs.readdir(TEST_DIR, function (err, files) {
 		if (err)
 			throw (err);
 
 		for (var ii = 0; ii < files.length; ii++)
-			fs.unlinkSync(path.join(dir, files[ii]));
-		fs.rmdirSync(dir);
+			fs.unlinkSync(path.join(TEST_DIR, files[ii]));
+		fs.rmdirSync(TEST_DIR);
 		t.end();
 	});
 });
