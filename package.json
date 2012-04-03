@@ -8,7 +8,8 @@
 		"restify": "git://github.com/mcavage/node-restify.git",
 		"node-uuid": "1.2.0",
 		"bunyan": "0.5.3",
-		"fsattr": "0.0.2"
+		"fsattr": "0.0.2",
+		"async": "0.1.18"
 	},
 	"devDependencies": {
 		"tap": "0.2"
