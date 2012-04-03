@@ -1,19 +1,20 @@
 /*
  * Copyright (c) 2012, Joyent, Inc. All rights reserved.
  *
- * A brief overview of this source file: what is its purpose.
+ * This service provides a simple PUT/GET/DELETE HTTP API for object storage.
  */
 
-var fs = require('fs');
-var async = require('async');
-var restify = require('restify');
-var Logger = require('bunyan');
-var path = require('path');
+var async = require('async'),
+    fs = require('fs'),
+    fsattr = require('fsattr'),
+    Logger = require('bunyan'),
+    path = require('path'),
+    restify = require('restify');
 
-var log = new Logger({ name: 'HTTP Storage API' });
+var log = new Logger({ name: 'HTTPObjectStorageAPI' });
 
 var server = restify.createServer({
-    name: 'HTTPStorageAPI'
+    name: 'HTTPObjectStorageAPI'
 });
 
 var DATA_DIR = process.env.DATA_DIR || '/var/tmp/mako/';
@@ -27,7 +28,7 @@ fs.mkdir(DATA_DIR, function (err) {
 });
 
 /*
- * Return a list of files managed on this storage node.
+ * Return a list of objects stored on this node.
  */
 server.get('/', function (req, res, next) {
 	log.debug('GET /');
@@ -68,6 +69,9 @@ server.get('/', function (req, res, next) {
 	});
 });
 
+/*
+ * Return the number of objects stored on this node.
+ */
 server.head('/', function (req, res, next) {
 	log.debug('HEAD /');
 
@@ -143,8 +147,22 @@ server.put('/:id', function (req, res, next) {
 		req.on('end', function (suberr) {
 			if (suberr)
 				throw (suberr);
-			res.send(204);
-			return (next());
+
+			/*
+			 * XXX I'm not actually sure which properties I want to
+			 * store as extended attributes, but this call at least
+			 * shows the API is working as intended.
+			 */
+			fsattr.put(file, 'mako-props', {
+			    'x-mako-remote-ip':  '1.2.3.4'
+			}, function (err) {
+				if (err) {
+					log.warn('failed to write fsattrs' +
+					    err.message);
+				}
+				res.send(204);
+				return (next());
+			});
 		});
 
 		req.on('error', function (suberr) {
