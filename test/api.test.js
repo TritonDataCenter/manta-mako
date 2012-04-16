@@ -19,7 +19,7 @@ var file = path.join(TEST_DIR, filename);
 
 var options = {
 	host: 'localhost',
-	port: 4444,
+	port: 80,
 	path: '/' + filename
 };
 

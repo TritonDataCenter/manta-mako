@@ -23,7 +23,7 @@ fs.mkdir(DATA_DIR, function (err) {
 	if (err && err.code !== 'EEXIST')
 		throw (err);
 
-	server.listen(4444, function () {
+	server.listen(80, function () {
     		log.info({url: server.url}, '%s listening', server.name);
 	});
 });
