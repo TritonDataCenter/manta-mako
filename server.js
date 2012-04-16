@@ -1,10 +1,11 @@
 /*
  * Copyright (c) 2012, Joyent, Inc. All rights reserved.
  *
- * This service provides a simple PUT/GET/DELETE HTTP API for object storage.
+ * A simple PUT/GET/DELETE HTTP API for object storage.
  */
 
-var async = require('async'),
+var assert = require('assert').ok,
+    async = require('async'),
     fs = require('fs'),
     fsattr = require('fsattr'),
     Logger = require('bunyan'),
@@ -92,30 +93,96 @@ server.get('/:id', function (req, res, next) {
 	log.debug('GET /' + id);
 
 	var file = path.join(DATA_DIR, id);
-	var rstream = fs.createReadStream(file);
 
-	rstream.on('error', function (err) {
-		if (err.code === 'ENOENT') {
-			log.warn('Object ' + id + 'not found: ' +
-			    err.message);
+	async.series([function (callback) {
+		fs.stat(file, function (err, stat) {
+			if (err && err.code === 'ENOENT') {
+				log.warn('Object ' + id + 'not found: ' +
+				    err.message);
+				res.send(404);
+				return (next());
+			} else if (err) {
+				log.error('fs.stat() error for ' + id + ': ' +
+				     err.message);
+				res.send(503);
+				return (next());
+			}
+			return (callback(null, stat));
+		});
+	}, function (callback) {
+		fs.open(file, 'r', function (err, fd) {
+			if (err) {
+				log.error('fs.open() error for ' + id + ': ' +
+				     err.message);
+				res.send(503);
+				return (next());
+			}
 
-			res.send(404);
+			return (callback(null, fd));
+		});
+	}], function (err, results) {
+		assert(!err);
+		assert(results.length === 2);
+		var stat = results[0];
+		var fd = results[1];
+
+		res.writeHead(200, {
+		    'Content-Length': stat.size,
+		    'I-Am-A-Fake-Header': 'yesIam'
+		});
+
+		fs.close(fd);
+
+		var rstream = fs.createReadStream(file);
+
+		rstream.on('error', function (suberr) {
+			if (suberr.code === 'ENOENT') {
+				log.warn('Object ' + id + 'not found: ' +
+				    suberr.message);
+
+				res.send(404);
+				return (next());
+			}
+
+			log.error('Error when creating read stream for ' + id +
+			    ': ' + suberr.message);
+			res.send(503);
 			return (next());
-		}
+		});
 
-		log.error('Error when creating read stream for ' + id +
-		    ': ' + err.message);
-		res.send(503);
-		return (next());
-	});
+		rstream.pipe(res);
 
-	rstream.pipe(res);
+		rstream.on('end', function (suberr) {
+			if (suberr)
+				throw (suberr);
+			res.end();
+			return (next());
+		});
 
-	rstream.on('end', function (err) {
-		if (err)
-			throw (err);
-		res.end();
-		return (next());
+		/* Don't actually use sendfile yet */
+		var flag = true;
+		if (flag)
+			return;
+
+		/*
+		 * This is a bit of a hack: since fs.sendfile() doesn't use
+		 * res.write() or a similar method, fs.sendfile() will start
+		 * blasting data over the file descriptor as soon as it's
+		 * called.  This may happen even before the headers are sent,
+		 * since writeHead() caches the headers and sends them with the
+		 * first body chunk.  This res._send() calls implicitly forces
+		 * the headers to be sent.
+		 */
+		res._send('');
+
+		fs.sendfile(req.socket._handle.fd, fd, 0, stat.size,
+		    function (suberr, len) {
+			if (suberr)
+				throw (suberr);
+			fs.close(fd);
+			res.end();
+			return (next());
+		});
 	});
 });
 
