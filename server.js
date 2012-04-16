@@ -227,7 +227,7 @@ server.put('/:id', function (req, res, next) {
 					log.warn('failed to write fsattrs' +
 					    err.message);
 				}
-				res.send(204);
+				res.send(201);
 				return (next());
 			});
 		});
