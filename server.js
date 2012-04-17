@@ -127,8 +127,7 @@ server.get('/:id', function (req, res, next) {
 		var fd = results[1];
 
 		res.writeHead(200, {
-		    'Content-Length': stat.size,
-		    'I-Am-A-Fake-Header': 'yesIam'
+		    'Content-Length': stat.size
 		});
 
 		fs.close(fd);
@@ -199,45 +198,14 @@ server.put('/:id', function (req, res, next) {
 		if (err && err.code === 'ENOENT') {
 			errno = 2;
 		} else if (err) {
-			log.error('Error when deleting ' + id +
+			log.error('Error from fs.stat() for ' + id +
 			    ': ' + err.message);
 			res.send(503);
 			return (next());
 		}
 	}
 
-	if (errno === 2) {
-		var wstream = fs.createWriteStream(file,
-		    { flags: 'w' });
-		req.pipe(wstream);
-
-		req.on('end', function (suberr) {
-			if (suberr)
-				throw (suberr);
-
-			/*
-			 * XXX I'm not actually sure which properties I want to
-			 * store as extended attributes, but this call at least
-			 * shows the API is working as intended.
-			 */
-			fsattr.put(file, 'mako-props', {
-			    'x-mako-remote-ip':  '1.2.3.4'
-			}, function (err) {
-				if (err) {
-					log.warn('failed to write fsattrs' +
-					    err.message);
-				}
-				res.send(201);
-				return (next());
-			});
-		});
-
-		req.on('error', function (suberr) {
-			log.error('Error writing file: ' + suberr.message);
-			res.send(503);
-			return (next());
-		});
-	} else {
+	if (errno !== 2) {
 		/*
 		 * If the fs.stat() call succeeds, then the object with this ID
 		 * already exists and we shouldn't overwrite it.
@@ -246,6 +214,39 @@ server.put('/:id', function (req, res, next) {
 		return (next());
 	}
 
+	var wstream = fs.createWriteStream(file, { flags: 'w' });
+	req.pipe(wstream);
+
+	wstream.on('error', function (err) {
+		log.error('Error from PUT /' + id +
+		    ' write stream: ' + err.message);
+		res.send(503);
+		return (next());
+	});
+
+	req.on('end', function () {
+		/*
+		 * XXX I'm not actually sure which properties I want to store as
+		 * extended attributes, but this call at least shows the API is
+		 * working as intended.
+		 */
+		fsattr.put(file, 'mako-props', {
+		    'x-mako-remote-ip':  '1.2.3.4'
+		}, function (suberr) {
+			if (suberr) {
+				log.warn('failed to write fsattrs' +
+				    suberr.message);
+			}
+			res.send(201);
+			return (next());
+		});
+	});
+
+	req.on('error', function (err) {
+		log.error('Error reading HTTP request: ' + err.message);
+		res.send(503);
+		return (next());
+	});
 });
 
 server.del('/:id', function (req, res, next) {
