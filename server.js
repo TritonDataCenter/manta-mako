@@ -28,6 +28,17 @@ fs.mkdir(DATA_DIR, function (err) {
 	});
 });
 
+var cleanupFile = function (file) {
+	fs.unlink(file, function (err) {
+		if (err) {
+			log.warn('After error, failed to remove ' +
+			    file + ': ' + err.message);
+			return (null);
+		}
+		log.info('After error, successfully removed ' + file);
+	});
+};
+
 /*
  * Return a list of objects stored on this node.
  */
@@ -218,9 +229,16 @@ server.put('/:id', function (req, res, next) {
 	req.pipe(wstream);
 
 	wstream.on('error', function (err) {
-		log.error('Error from PUT /' + id +
-		    ' write stream: ' + err.message);
+		log.error('Error from PUT /' + id + ' wstream: ' + err.message);
 		res.send(503);
+		cleanupFile(file);
+		return (next());
+	});
+
+	req.on('error', function (err) {
+		log.error('Error reading HTTP request: ' + err.message);
+		res.send(503);
+		cleanupFile(file);
 		return (next());
 	});
 
@@ -240,12 +258,6 @@ server.put('/:id', function (req, res, next) {
 			res.send(201);
 			return (next());
 		});
-	});
-
-	req.on('error', function (err) {
-		log.error('Error reading HTTP request: ' + err.message);
-		res.send(503);
-		return (next());
 	});
 });
 
