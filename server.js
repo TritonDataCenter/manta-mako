@@ -210,7 +210,7 @@ server.put('/:id', function (req, res, next) {
 		 * If the fs.stat() call succeeds, then the object with this ID
 		 * already exists and we shouldn't overwrite it.
 		 */
-		res.send(409);
+		res.send(405);
 		return (next());
 	}
 

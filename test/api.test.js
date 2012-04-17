@@ -117,7 +117,7 @@ test('put existing object', function (t) {
 	var req = http.request(options, function (res) {
 		console.log('STATUS: ' + res.statusCode);
 		console.log('HEADERS: ' + JSON.stringify(res.headers));
-		t.equal(res.statusCode, 409);
+		t.equal(res.statusCode, 405);
 		t.end();
 	});
 
