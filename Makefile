@@ -43,8 +43,7 @@ TMPDIR          := /tmp/$(STAMP)
 # Repo-specific targets
 #
 .PHONY: all
-all: $(SMF_MANIFESTS) | $(TAP) $(REPO_DEPS) $(NGINX_EXEC)
-	$(NPM) rebuild
+all: $(NGINX_EXEC)
 
 $(TAP): | $(NPM_EXEC)
 	$(NPM) install
@@ -61,14 +60,8 @@ release: all deps docs $(SMF_MANIFESTS)
 	@mkdir -p $(TMPDIR)/root/opt/smartdc/mako
 	@mkdir -p $(TMPDIR)/site
 	@touch $(TMPDIR)/site/.do-not-delete-me
-	cp -r   $(ROOT)/build \
-    $(ROOT)/lib \
-    $(ROOT)/Makefile \
-    $(ROOT)/node_modules \
-    $(ROOT)/package.json \
-    $(ROOT)/smf \
-    $(ROOT)/tools \
-    $(TMPDIR)/root/opt/smartdc/mako/
+	cp -r $(ROOT)/build/nginx \
+	$(TMPDIR)/root/opt/smartdc/mako/
 	(cd $(TMPDIR) && $(TAR) -jcf $(ROOT)/$(RELEASE_TARBALL) root site)
 	@rm -rf $(TMPDIR)
 
@@ -80,8 +73,6 @@ publish: release
 	fi
 	mkdir -p $(BITS_DIR)/mako
 	cp $(ROOT)/$(RELEASE_TARBALL) $(BITS_DIR)/mako/$(RELEASE_TARBALL)
-
-
 
 include ./tools/mk/Makefile.deps
 include ./tools/mk/Makefile.node.targ
