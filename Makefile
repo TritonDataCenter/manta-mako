@@ -54,7 +54,8 @@ release: all deps docs $(SMF_MANIFESTS)
 	@mkdir -p $(TMPDIR)/site
 	@touch $(TMPDIR)/site/.do-not-delete-me
 	cp -r $(ROOT)/build/nginx \
-	$(TMPDIR)/root/opt/smartdc/mako/
+	    $(ROOT)/smf \
+	    $(TMPDIR)/root/opt/smartdc/mako/
 	(cd $(TMPDIR) && $(TAR) -jcf $(ROOT)/$(RELEASE_TARBALL) root site)
 	@rm -rf $(TMPDIR)
 
