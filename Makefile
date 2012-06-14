@@ -23,17 +23,10 @@ TAP		:= ./node_modules/.bin/tap
 # Files
 #
 DOC_FILES	 = index.restdown boilerplateapi.restdown
-JS_FILES	:= $(shell ls *.js) $(shell find lib test -name '*.js')
-JSL_CONF_NODE	 = tools/jsl.node.conf
-JSL_FILES_NODE   = $(JS_FILES)
-JSSTYLE_FILES	 = $(JS_FILES)
 SMF_MANIFESTS_IN = smf/manifests/bapi.xml.in
 
 include ./tools/mk/Makefile.defs
-include ./tools/mk/Makefile.node.defs
 include ./tools/mk/Makefile.nginx.defs
-include ./tools/mk/Makefile.node_deps.defs
-include ./tools/mk/Makefile.smf.defs
 
 ROOT            := $(shell pwd)
 RELEASE_TARBALL := mako-pkg-$(STAMP).tar.bz2
@@ -75,8 +68,5 @@ publish: release
 	cp $(ROOT)/$(RELEASE_TARBALL) $(BITS_DIR)/mako/$(RELEASE_TARBALL)
 
 include ./tools/mk/Makefile.deps
-include ./tools/mk/Makefile.node.targ
-include ./tools/mk/Makefile.node_deps.targ
-include ./tools/mk/Makefile.smf.targ
 include ./tools/mk/Makefile.nginx.targ
 include ./tools/mk/Makefile.targ
