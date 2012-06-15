@@ -9,7 +9,7 @@
         <dependency name="dep0" grouping="require_all" restart_on="error" type="service" >
             <service_fmri value="svc:/milestone/multi-user:default" />
         </dependency>
-        <exec_method type="method" name="start" exec="/opt/smartdc/mako/nginx/sbin/nginx -c /opt/smartdc/mako/nginx/conf/nginx.conf &amp;" timeout_seconds="10" />
+        <exec_method type="method" name="start" exec="/opt/smartdc/mako/nginx/sbin/nginx -p /opt/smartdc/mako/nginx/ &amp;" timeout_seconds="11" />
         <exec_method type="method" name="stop" exec=":kill" timeout_seconds="30" />
         <template >
             <common_name >
