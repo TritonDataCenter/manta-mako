@@ -3,7 +3,6 @@
 <!-- Copyright (c) 2012, Joyent, Inc. All rights reserved. -->
 <service_bundle type="manifest" name="nginx" >
     <service name="sds/application/mako" type="service" version="1" >
-	<single_instance />
         <create_default_instance enabled="true" />
 	<single_instance />
 
