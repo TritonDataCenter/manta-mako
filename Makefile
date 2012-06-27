@@ -22,8 +22,7 @@ TAP		:= ./node_modules/.bin/tap
 #
 # Files
 #
-DOC_FILES	 = index.restdown boilerplateapi.restdown
-SMF_MANIFESTS_IN = smf/manifests/bapi.xml.in
+DOC_FILES	 = index.restdown
 
 include ./tools/mk/Makefile.defs
 include ./tools/mk/Makefile.nginx.defs
