@@ -55,6 +55,7 @@ release: all deps docs $(SMF_MANIFESTS)
 	cp -r $(ROOT)/build/nginx \
 	    $(ROOT)/smf \
 	    $(TMPDIR)/root/opt/smartdc/mako/
+	rm $(TMPDIR)/root/opt/smartdc/mako/nginx/conf/*.default
 	(cd $(TMPDIR) && $(TAR) -jcf $(ROOT)/$(RELEASE_TARBALL) root site)
 	@rm -rf $(TMPDIR)
 
