@@ -30,6 +30,8 @@ AUTHZ_HEADER="keyId=\"/$MANTA_USER/keys/$MANTA_KEY_ID\",algorithm=\"rsa-sha256\"
 DIR_TYPE='application/json; type=directory'
 LOG_TYPE='application/x-bzip2'
 
+
+
 # Mutables
 
 NOW=""
@@ -39,9 +41,16 @@ SIGNATURE=""
 
 ## Functions
 
-function fail() {
-    echo "$*" >&2
+function fatal {
+    local LNOW=`date`
+    echo "$LNOW: $(basename $0): fatal error: $*" >&2
     exit 1
+}
+
+
+function log {
+    local LNOW=`date`
+    echo "$LNOW: $(basename $0): info: $*" >&2
 }
 
 
@@ -50,32 +59,31 @@ function sign() {
     SIGNATURE=$(echo $NOW | tr -d '\n' | \
         openssl dgst -sha256 -sign $SSH_KEY | \
         openssl enc -e -a | tr -d '\n') \
-        || fail "unable to sign data"
+        || fatal "unable to sign data"
 }
 
 
 function manta_get() {
-    sign || fail "unable to sign"
+    sign || fatal "unable to sign"
     curl -fsSk \
         -X GET \
         -H "Date: $NOW" \
         -H "Authorization: Signature $AUTHZ_HEADER $SIGNATURE" \
         -H "Connection: close" \
         $MANTA_URL/$MANTA_USER/stor$1 \
-        || fail "unable to get $1"
+        || fatal "unable to get $1"
 }
 
 
 function manta_delete() {
-    return;
-    sign || fail "unable to sign"
+    sign || fatal "unable to sign"
     curl -fsSk \
         -X DELETE \
         -H "Date: $NOW" \
         -H "Authorization: Signature $AUTHZ_HEADER $SIGNATURE" \
         -H "Connection: close" \
         $MANTA_URL/$MANTA_USER/stor$1 \
-        || fail "unable to delete $1"
+        || fatal "unable to delete $1"
 }
 
 
@@ -84,15 +92,28 @@ function manta_delete() {
 
 : ${ZONENAME:?"Zonename must be set."}
 
+log "starting gc"
+COUNT=0
 MPATH=/manta_gc/mako/$ZONENAME
-for file in `manta_get $MPATH | json -a name`
+for JSON in `manta_get $MPATH`
 do
     #Fields 5 and 6 are the owner and object ids, respectively.
-    MFILE=$MPATH/$file
-    (manta_get $MFILE | \
-        grep "^mako.*$ZONENAME" | \
-        cut -f 4,5 | tr '\t' '/' | xargs -i rm -f /manta/{} && \
-        manta_delete $MFILE && \
-        echo "SUCCESS processing $MFILE.") || \
-	echo "ERROR processing $MFILE."
+    FILE=$(echo $JSON | json -a name)
+    MFILE=$MPATH/$FILE
+    for OBJECT in `manta_get $MFILE | grep "^mako.*$ZONENAME" | cut -f 5,6 | tr '\t' '/' | xargs -i echo /manta/{}`;
+    do
+        log "Removing $OBJECT"
+        rm -f $OBJECT
+    done
+    [[ $? -eq 0 ]] || fatal "error processing $MFILE."
+
+    manta_delete $MFILE
+
+    ((COUNT++))
+    log "success processing $MFILE."
 done
+
+[[ $? -eq 0 ]] || fatal "Couldnt get $MPATH"
+
+log "gc done, processed $COUNT files"
+exit 0;
