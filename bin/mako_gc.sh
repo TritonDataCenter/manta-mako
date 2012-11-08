@@ -63,14 +63,25 @@ function sign() {
 }
 
 
-function manta_get() {
+function manta_get_no_fatal() {
     sign || fatal "unable to sign"
     curl -fsSk \
         -X GET \
         -H "Date: $NOW" \
         -H "Authorization: Signature $AUTHZ_HEADER $SIGNATURE" \
         -H "Connection: close" \
-        $MANTA_URL/$MANTA_USER/stor$1 \
+        $MANTA_URL/$MANTA_USER/stor$1 2>&1
+}
+
+
+function manta_get_to_file() {
+    sign || fatal "unable to sign"
+    curl -fsSk \
+        -X GET \
+        -H "Date: $NOW" \
+        -H "Authorization: Signature $AUTHZ_HEADER $SIGNATURE" \
+        -H "Connection: close" \
+        $MANTA_URL/$MANTA_USER/stor$1 >$2 \
         || fatal "unable to get $1"
 }
 
@@ -93,27 +104,65 @@ function manta_delete() {
 : ${ZONENAME:?"Zonename must be set."}
 
 log "starting gc"
-COUNT=0
+
+FILE_COUNT=0
+OBJECT_COUNT=0
 MPATH=/manta_gc/mako/$ZONENAME
-for JSON in `manta_get $MPATH`
+TMP_DIR=/tmp/mako_gc
+
+GET_RES=`manta_get_no_fatal $MPATH`
+if [[ $? -ne 0 ]]
+then
+    if [[ "$GET_RES" == *404* ]]
+    then
+        log "GC not ready yet: $MPATH $GET_RES"
+        exit 0
+    else
+	fatal "$MPATH $GET_RES"
+    fi
+fi
+
+mkdir -p $TMP_DIR
+
+while read -r JSON
 do
-    #Fields 5 and 6 are the owner and object ids, respectively.
+    if [[ "$JSON" == "" ]]
+    then
+        break
+    fi
+
     FILE=$(echo $JSON | json -a name)
     MFILE=$MPATH/$FILE
-    for OBJECT in `manta_get $MFILE | grep "^mako.*$ZONENAME" | cut -f 5,6 | tr '\t' '/' | xargs -i echo /manta/{}`;
-    do
-        log "Removing $OBJECT"
-        rm -f $OBJECT
-    done
-    [[ $? -eq 0 ]] || fatal "error processing $MFILE."
+    LFILE=$TMP_DIR/$FILE
+    manta_get_to_file $MFILE $LFILE
 
+    while read -r LINE
+    do
+	#Filter out any lines that aren't meant for this zone...
+	if [[ ! $LINE =~ mako.*$ZONENAME ]]
+	then
+            continue
+	fi
+        #Fields 5 and 6 are the owner and object ids, respectively.
+	OBJECT=`echo "$LINE" | cut -f 5,6 | tr '\t' '/' | xargs -i echo /manta/{}`
+	if [[ -f $OBJECT ]]
+	then
+	    log "Removing $OBJECT. Line: {$LINE}"
+	    rm $OBJECT
+	    [[ $? -eq 0 ]] || fatal "Couldn't remove $OBJECT"
+	    OBJECT_COUNT=$[OBJECT_COUNT + 1]
+	else
+	    log "$OBJECT doesn't exist, so not removing.  Line: {$LINE}."
+	fi
+    done < "$LFILE"
+
+    rm $LFILE
     manta_delete $MFILE
 
-    ((COUNT++))
+    FILE_COUNT=$[FILE_COUNT + 1]
+
     log "success processing $MFILE."
-done
+done <<< "$GET_RES"
 
-[[ $? -eq 0 ]] || fatal "Couldnt get $MPATH"
-
-log "gc done, processed $COUNT files"
+log "gc done, processed $FILE_COUNT files and $OBJECT_COUNT objects"
 exit 0;
