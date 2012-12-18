@@ -109,6 +109,8 @@ FILE_COUNT=0
 OBJECT_COUNT=0
 MPATH=/manta_gc/mako/$ZONENAME
 TMP_DIR=/tmp/mako_gc
+TOMB_DATE=$(date "+%Y-%m-%d")
+TOMB_DIR=/manta/tombstone/$TOMB_DATE
 
 GET_RES=`manta_get_no_fatal $MPATH`
 if [[ $? -ne 0 ]]
@@ -123,6 +125,7 @@ then
 fi
 
 mkdir -p $TMP_DIR
+mkdir -p $TOMB_DIR
 
 while read -r JSON
 do
@@ -136,6 +139,8 @@ do
     LFILE=$TMP_DIR/$FILE
     manta_get_to_file $MFILE $LFILE
 
+    log "Processing manta object $MFILE"
+
     while read -r LINE
     do
 	#Filter out any lines that aren't meant for this zone...
@@ -147,12 +152,12 @@ do
 	OBJECT=`echo "$LINE" | cut -f 5,6 | tr '\t' '/' | xargs -i echo /manta/{}`
 	if [[ -f $OBJECT ]]
 	then
-	    log "Removing $OBJECT. Line: {$LINE}"
-	    rm $OBJECT
-	    [[ $? -eq 0 ]] || fatal "Couldn't remove $OBJECT"
+	    log "Moving $OBJECT to $TOMB_DIR. Line: {$LINE}"
+	    mv $OBJECT $TOMB_DIR
+	    [[ $? -eq 0 ]] || fatal "Couldn't move $OBJECT"
 	    OBJECT_COUNT=$[OBJECT_COUNT + 1]
 	else
-	    log "$OBJECT doesn't exist, so not removing.  Line: {$LINE}."
+	    log "$OBJECT doesn't exist, so not moving.  Line: {$LINE}."
 	fi
     done < "$LFILE"
 
