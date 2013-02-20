@@ -28,7 +28,13 @@ export PATH=/opt/local/bin:$PATH
 
 AUTHZ_HEADER="keyId=\"/$MANTA_USER/keys/$MANTA_KEY_ID\",algorithm=\"rsa-sha256\""
 DIR_TYPE='application/json; type=directory'
+HOSTNAME=`hostname`
 LOG_TYPE='application/x-bzip2'
+MPATH=/manta_gc/mako/$ZONENAME
+PID=$$
+TMP_DIR=/tmp/mako_gc
+TOMB_DATE=$(date "+%Y-%m-%d")
+TOMB_DIR=/manta/tombstone/$TOMB_DATE
 
 
 
@@ -37,20 +43,64 @@ LOG_TYPE='application/x-bzip2'
 NOW=""
 SIGNATURE=""
 
+ERROR="true"
+FILE_COUNT=0
+OBJECT_COUNT=0
+
 
 
 ## Functions
 
 function fatal {
-    local LNOW=`date`
+    local LNOW=`date "+%Y-%m-%dT%H:%M:%S.000Z"`
     echo "$LNOW: $(basename $0): fatal error: $*" >&2
+    audit
     exit 1
 }
 
 
 function log {
-    local LNOW=`date`
+    local LNOW=`date "+%Y-%m-%dT%H:%M:%S.000Z"`
     echo "$LNOW: $(basename $0): info: $*" >&2
+}
+
+
+# Since we use bunyan, this mimics a json structure.
+function audit {
+    local LNOW=`date "+%Y-%m-%dT%H:%M:%S.000Z"`
+    echo "{\
+\"audit\":true,\
+\"name\":\"mako_gc\",\
+\"level\":30,\
+\"error\":$ERROR,\
+\"msg\":\"audit\",\
+\"v\":0,\
+\"time\":\"$LNOW\",\
+\"pid\":$PID,\
+\"cronExec\":1,\
+\"hostname\":\"$HOSTNAME\",\
+\"fileCount\":\"$FILE_COUNT\",\
+\"objectCount\":\"$OBJECT_COUNT\"\
+}" >&2
+}
+
+
+function auditRow {
+    local LNOW=`date "+%Y-%m-%dT%H:%M:%S.000Z"`
+    echo "{\
+\"audit\":true,\
+\"name\":\"mako_gc\",\
+\"level\":30,\
+\"msg\":\"audit\",\
+\"v\":0,\
+\"time\":\"$LNOW\",\
+\"pid\":$PID,\
+\"hostname\":\"$HOSTNAME\",\
+\"alreadyDeleted\":\"$1\",\
+\"objectId\":\"$2\",\
+\"tomb\":\"$3\",\
+\"processed\":1\
+}" >&2
 }
 
 
@@ -105,22 +155,17 @@ function manta_delete() {
 
 log "starting gc"
 
-FILE_COUNT=0
-OBJECT_COUNT=0
-MPATH=/manta_gc/mako/$ZONENAME
-TMP_DIR=/tmp/mako_gc
-TOMB_DATE=$(date "+%Y-%m-%d")
-TOMB_DIR=/manta/tombstone/$TOMB_DATE
-
 GET_RES=`manta_get_no_fatal $MPATH`
 if [[ $? -ne 0 ]]
 then
     if [[ "$GET_RES" == *404* ]]
     then
         log "GC not ready yet: $MPATH $GET_RES"
+        ERROR="false"
+        audit
         exit 0
     else
-	fatal "$MPATH $GET_RES"
+        fatal "$MPATH $GET_RES"
     fi
 fi
 
@@ -143,31 +188,33 @@ do
 
     while read -r LINE
     do
-	#Filter out any lines that aren't meant for this zone...
-	if [[ ! $LINE =~ mako.*$ZONENAME ]]
-	then
+        #Filter out any lines that aren't meant for this zone...
+        if [[ ! $LINE =~ mako.*$ZONENAME ]]
+        then
             continue
-	fi
+        fi
+        log "Processing $LINE"
         #Fields 5 and 6 are the owner and object ids, respectively.
-	OBJECT=`echo "$LINE" | cut -f 5,6 | tr '\t' '/' | xargs -i echo /manta/{}`
-	if [[ -f $OBJECT ]]
-	then
-	    log "Moving $OBJECT to $TOMB_DIR. Line: {$LINE}"
-	    mv $OBJECT $TOMB_DIR
-	    [[ $? -eq 0 ]] || fatal "Couldn't move $OBJECT"
-	    OBJECT_COUNT=$[OBJECT_COUNT + 1]
-	else
-	    log "$OBJECT doesn't exist, so not moving.  Line: {$LINE}."
-	fi
+        OBJECT=`echo "$LINE" | cut -f 5,6 | tr '\t' '/' | xargs -i echo /manta/{}`
+        if [[ -f $OBJECT ]]
+        then
+            auditRow "false" "$OBJECT" "$TOMB_DIR"
+            mv $OBJECT $TOMB_DIR
+            [[ $? -eq 0 ]] || fatal "Couldn't move $OBJECT"
+            ((OBJECT_COUNT++))
+        else
+            auditRow "true" "$OBJECT" "$TOMB_DIR"
+        fi
     done < "$LFILE"
 
     rm $LFILE
     manta_delete $MFILE
 
-    FILE_COUNT=$[FILE_COUNT + 1]
+    ((FILE_COUNT++))
 
     log "success processing $MFILE."
 done <<< "$GET_RES"
 
-log "gc done, processed $FILE_COUNT files and $OBJECT_COUNT objects"
+ERROR="false"
+audit
 exit 0;
