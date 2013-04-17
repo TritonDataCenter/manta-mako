@@ -2,10 +2,9 @@
 
 ###############################################################################
 # This cleans manta objects by first sucking down all files under:
-#  /manta_gc/mako/$ZONENAME
+#  /manta_gc/mako/$MANTA_STORAGE_ID
 # Which come in the following format:
-#  mako + \t + serverUrl + \t + serverId + \t + zoneId + \t + ownerId +
-#    \t + objectId
+#  mako + \t + mantaStorageId + \t + ownerId + \t + objectId
 #
 # Since manta objects are kept under /manta/ownerId/objectId, the ids are taken
 # from the lines in the file and used to find and unlink the objects on the
@@ -24,13 +23,13 @@ export PATH=/opt/local/bin:$PATH
 [ -z $MANTA_KEY_ID ] && MANTA_KEY_ID=$(ssh-keygen -l -f $SSH_KEY.pub | awk '{print $2}')
 [ -z $MANTA_URL ] && MANTA_URL=$(mdata-get manta_url)
 [ -z $MANTA_USER ] && MANTA_USER=poseidon
-[ -z $ZONENAME ] && ZONENAME=$(/usr/bin/zonename)
+[ -z $MANTA_STORAGE_ID ] && MANTA_STORAGE_ID=$(mdata-get manta_storage_id)
 
 AUTHZ_HEADER="keyId=\"/$MANTA_USER/keys/$MANTA_KEY_ID\",algorithm=\"rsa-sha256\""
 DIR_TYPE='application/json; type=directory'
 HOSTNAME=`hostname`
 LOG_TYPE='application/x-bzip2'
-MPATH=/manta_gc/mako/$ZONENAME
+MPATH=/manta_gc/mako/$MANTA_STORAGE_ID
 PID=$$
 TMP_DIR=/tmp/mako_gc
 TOMB_DATE=$(date "+%Y-%m-%d")
@@ -151,7 +150,7 @@ function manta_delete() {
 
 ## Main
 
-: ${ZONENAME:?"Zonename must be set."}
+: ${MANTA_STORAGE_ID:?"Manta storage id must be set."}
 
 log "starting gc"
 
@@ -188,14 +187,14 @@ do
 
     while read -r LINE
     do
-        #Filter out any lines that aren't meant for this zone...
-        if [[ ! $LINE =~ mako.*$ZONENAME ]]
+        #Filter out any lines that aren't meant for this storage node...
+        if [[ ! $LINE =~ mako.*$MANTA_STORAGE_ID ]]
         then
             continue
         fi
         log "Processing $LINE"
-        #Fields 5 and 6 are the owner and object ids, respectively.
-        OBJECT=`echo "$LINE" | cut -f 5,6 | tr '\t' '/' | xargs -i echo /manta/{}`
+        #Fields 3 and 4 are the owner and object ids, respectively.
+        OBJECT=`echo "$LINE" | cut -f 3,4 | tr '\t' '/' | xargs -i echo /manta/{}`
         if [[ -f $OBJECT ]]
         then
             auditRow "false" "$OBJECT" "$TOMB_DIR"
