@@ -15,7 +15,8 @@ export PATH=/opt/local/bin:$PATH
 
 [ -z $SSH_KEY ] && SSH_KEY=/root/.ssh/id_rsa
 [ -z $MANTA_KEY_ID ] && MANTA_KEY_ID=$(ssh-keygen -l -f $SSH_KEY.pub | awk '{print $2}')
-[ -z $MANTA_URL ] && MANTA_URL=$(mdata-get manta_url)
+[ -z $MANTA_URL ] && MANTA_URL=$(curl -s $(mdata-get SAPI_URL)/configs/$(zonename) | \
+                                 json -ga metadata.MANTA_URL)
 [ -z $MANTA_USER ] && MANTA_USER=poseidon
 [ -z $ZONENAME ] && ZONENAME=$(/usr/bin/zonename)
 
