@@ -21,11 +21,9 @@ export PATH=/opt/local/bin:$PATH
 
 [ -z $SSH_KEY ] && SSH_KEY=/root/.ssh/id_rsa
 [ -z $MANTA_KEY_ID ] && MANTA_KEY_ID=$(ssh-keygen -l -f $SSH_KEY.pub | awk '{print $2}')
-[ -z $MANTA_URL ] && MANTA_URL=$(curl -s $(mdata-get SAPI_URL)/configs/$(zonename) | \
-                                 json -ga metadata.MANTA_URL)
+[ -z $MANTA_URL ] && MANTA_URL=$(cat /opt/smartdc/mako/etc/gc_config.json | json -ga manta_url)
 [ -z $MANTA_USER ] && MANTA_USER=poseidon
-[ -z $MANTA_STORAGE_ID ] && MANTA_STORAGE_ID=$(curl -s $(mdata-get SAPI_URL)/configs/$(zonename) | \
-                                               json -ga metadata.MANTA_STORAGE_ID)
+[ -z $MANTA_STORAGE_ID ] && MANTA_STORAGE_ID=$(cat /opt/smartdc/mako/etc/gc_config.json | json -ga manta_storage_id)
 
 AUTHZ_HEADER="keyId=\"/$MANTA_USER/keys/$MANTA_KEY_ID\",algorithm=\"rsa-sha256\""
 DIR_TYPE='application/json; type=directory'
