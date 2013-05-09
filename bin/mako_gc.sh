@@ -105,7 +105,7 @@ function auditRow {
 
 function sign() {
     NOW=$(date -u "+%a, %d %h %Y %H:%M:%S GMT")
-    SIGNATURE=$(echo $NOW | tr -d '\n' | \
+    SIGNATURE=$(echo "date: $NOW" | tr -d '\n' | \
         openssl dgst -sha256 -sign $SSH_KEY | \
         openssl enc -e -a | tr -d '\n') \
         || fatal "unable to sign data"
@@ -117,7 +117,7 @@ function manta_get_no_fatal() {
     curl -fsSk \
         -X GET \
         -H "Date: $NOW" \
-        -H "Authorization: Signature $AUTHZ_HEADER $SIGNATURE" \
+        -H "Authorization: Signature $AUTHZ_HEADER,signature=\"$SIGNATURE\"" \
         -H "Connection: close" \
         $MANTA_URL/$MANTA_USER/stor$1 2>&1
 }
@@ -128,7 +128,7 @@ function manta_get_to_file() {
     curl -fsSk \
         -X GET \
         -H "Date: $NOW" \
-        -H "Authorization: Signature $AUTHZ_HEADER $SIGNATURE" \
+        -H "Authorization: Signature $AUTHZ_HEADER,signature=\"$SIGNATURE\"" \
         -H "Connection: close" \
         $MANTA_URL/$MANTA_USER/stor$1 >$2 \
         || fatal "unable to get $1"
@@ -140,7 +140,7 @@ function manta_delete() {
     curl -fsSk \
         -X DELETE \
         -H "Date: $NOW" \
-        -H "Authorization: Signature $AUTHZ_HEADER $SIGNATURE" \
+        -H "Authorization: Signature $AUTHZ_HEADER,signature=\"$SIGNATURE\"" \
         -H "Connection: close" \
         $MANTA_URL/$MANTA_USER/stor$1 \
         || fatal "unable to delete $1"

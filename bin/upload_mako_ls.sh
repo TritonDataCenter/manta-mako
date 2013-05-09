@@ -49,7 +49,7 @@ function log {
 
 function sign() {
     NOW=$(date -u "+%a, %d %h %Y %H:%M:%S GMT")
-    SIGNATURE=$(echo $NOW | tr -d '\n' | \
+    SIGNATURE=$(echo "date: $NOW" | tr -d '\n' | \
         openssl dgst -sha256 -sign $SSH_KEY | \
         openssl enc -e -a | tr -d '\n') \
         || fatal "unable to sign data"
@@ -62,7 +62,7 @@ function manta_put_directory() {
         -X PUT \
         -H "content-type: application/json; type=directory" \
         -H "Date: $NOW" \
-        -H "Authorization: Signature $AUTHZ_HEADER $SIGNATURE" \
+        -H "Authorization: Signature $AUTHZ_HEADER,signature=\"$SIGNATURE\"" \
         -H "Connection: close" \
         $MANTA_URL/$MANTA_USER/stor$1 2>&1
 }
@@ -73,7 +73,7 @@ function manta_put() {
     curl -vfsSk \
         -X PUT \
         -H "Date: $NOW" \
-        -H "Authorization: Signature $AUTHZ_HEADER $SIGNATURE" \
+        -H "Authorization: Signature $AUTHZ_HEADER,signature=\"$SIGNATURE\"" \
         -H "Connection: close" \
         $MANTA_URL/$MANTA_USER/stor$1 \
         --data-binary @$2 \
