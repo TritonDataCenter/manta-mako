@@ -2,7 +2,7 @@
 
 ###############################################################################
 # This takes a recursive directory listing of /manta/ and uploads it to
-# /poseidon/stor/mako/$(zonename)
+# /poseidon/stor/mako/$(manta_storage_id)
 ###############################################################################
 
 export PATH=/opt/local/bin:$PATH
@@ -17,7 +17,7 @@ export PATH=/opt/local/bin:$PATH
 [ -z $MANTA_KEY_ID ] && MANTA_KEY_ID=$(ssh-keygen -l -f $SSH_KEY.pub | awk '{print $2}')
 [ -z $MANTA_URL ] && MANTA_URL=$(cat /opt/smartdc/mako/etc/gc_config.json | json -ga manta_url)
 [ -z $MANTA_USER ] && MANTA_USER=poseidon
-[ -z $ZONENAME ] && ZONENAME=$(/usr/bin/zonename)
+[ -z $MANTA_STORAGE_ID ] && MANTA_STORAGE_ID=$(cat /opt/smartdc/mako/etc/gc_config.json | json -ga manta_storage_id)
 
 AUTHZ_HEADER="keyId=\"/$MANTA_USER/keys/$MANTA_KEY_ID\",algorithm=\"rsa-sha256\""
 DIR_TYPE='application/json; type=directory'
@@ -84,12 +84,12 @@ function manta_put() {
 
 ## Main
 
-: ${ZONENAME:?"Zonename must be set."}
+: ${MANTA_STORAGE_ID:?"Manta Storage Id must be set."}
 
 log "starting directory listing upload"
 
 TMP_DIR=/tmp/mako_dir
-LISTING_FILE=$TMP_DIR/$ZONENAME
+LISTING_FILE=$TMP_DIR/$MANTA_STORAGE_ID
 MANTA_DIR=/mako
 
 mkdir -p $TMP_DIR
@@ -99,10 +99,10 @@ find /manta -type f -printf '%p\t%s\t%T@\n' >$LISTING_FILE
 
 manta_put_directory $MANTA_DIR
 
-manta_put $MANTA_DIR/$ZONENAME $LISTING_FILE
+manta_put $MANTA_DIR/$MANTA_STORAGE_ID $LISTING_FILE
 
 rm -rf $TMP_DIR
 
-log "Uploaded $LISTING_FILE to $MANTA_DIR/$ZONENAME"
+log "Uploaded $LISTING_FILE to $MANTA_DIR/$MANTA_STORAGE_ID"
 
 exit 0;
