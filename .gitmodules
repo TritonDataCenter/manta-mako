@@ -3,4 +3,4 @@
 	url = git://github.com/trentm/restdown.git
 [submodule "deps/nginx"]
 	path = deps/nginx
-	url = git@github.com:pijewski/nginx.git
+	url = git@github.com:joyent/nginx.git
