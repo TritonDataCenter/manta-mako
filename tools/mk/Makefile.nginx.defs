@@ -63,7 +63,12 @@ BUILD		?= build
 NGINX_INSTALL 	?= $(BUILD)/nginx
 DISTCLEAN_FILES	+= $(NGINX_INSTALL)
 
-NGINX_CONFIG_FLAGS += --prefix=$(TOP)/$(NGINX_INSTALL) --with-http_dav_module
+NGINX_CONFIG_FLAGS += \
+	--prefix=$(TOP)/$(NGINX_INSTALL) \
+	--with-http_dav_module \
+	--with-cc-opt="-I/opt/local/include" \
+	--with-ld-opt="-L/opt/local/lib -R/opt/local/lib"
+
 NGINX_EXEC	= $(NGINX_INSTALL)/bin/nginx
 
 # Ensure these use absolute paths to the executables to allow running
