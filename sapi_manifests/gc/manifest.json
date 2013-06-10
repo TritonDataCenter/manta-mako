@@ -1,0 +1,5 @@
+{
+    "name": "gc",
+    "path": "/opt/smartdc/mako/etc/gc_config.json",
+	"master": true
+}

@@ -1,0 +1,4 @@
+{
+	"manta_url": "{{MANTA_URL}}",
+	"manta_storage_id": "{{MANTA_STORAGE_ID}}"
+}
