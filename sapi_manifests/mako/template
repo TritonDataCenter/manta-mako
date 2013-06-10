@@ -1,0 +1,41 @@
+worker_processes  8;
+
+error_log /var/log/mako-error.log info;
+
+events {
+	worker_connections  1024;
+}
+
+http {
+	access_log	/var/log/mako-access.log;
+	client_max_body_size 0;
+	default_type	application/octet-stream;
+	include		mime.types;
+	keepalive_timeout 65;
+	sendfile 	on;
+
+	server {
+		autoindex 	on;
+		listen		80;
+		root		/manta;
+		server_name	localhost;
+
+		location /
+		{
+			client_body_temp_path	/manta/nginx_temp;
+			create_full_put_path	on;
+			dav_access		user:rw  group:r  all:r;
+			dav_methods		PUT DELETE;
+			expires			max;
+			fsync			on;
+			put_always_respond_md5	on;
+			content_md5_fail_status	469;
+		}
+
+		error_page 500 502 503 504 /50x.html;
+
+		location = /50x.html {
+			root   html;
+		}
+	}
+}

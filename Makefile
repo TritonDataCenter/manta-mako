@@ -54,6 +54,7 @@ release: all deps docs $(SMF_MANIFESTS)
 	@touch $(TMPDIR)/site/.do-not-delete-me
 	cp -r $(ROOT)/bin \
 	    $(ROOT)/build/nginx \
+	    $(ROOT)/sapi_manifests \
 	    $(ROOT)/smf \
 	    $(TMPDIR)/root/opt/smartdc/mako/
 	rm $(TMPDIR)/root/opt/smartdc/mako/nginx/conf/*.default

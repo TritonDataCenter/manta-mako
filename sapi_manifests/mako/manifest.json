@@ -1,0 +1,6 @@
+{
+	"name": "mako",
+	"path": "/opt/smartdc/mako/nginx/conf/nginx.conf",
+	"post_cmd": "svcadm refresh mako",
+	"master": true
+}
