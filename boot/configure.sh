@@ -3,6 +3,12 @@
 
 set -o xtrace
 
+SOURCE="${BASH_SOURCE[0]}"
+if [[ -h $SOURCE ]]; then
+    SOURCE="$(readlink "$SOURCE")"
+fi
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
 MANTA_ROOT=/manta
 MINNOW_PATH=/opt/smartdc/minnow
 MINNOW_CFG=${MINNOW_PATH}/etc/config.json
@@ -11,8 +17,8 @@ SVC_ROOT=/opt/smartdc/mako
 ZONE_UUID=$(zonename)
 ZONE_DATASET=zones/$ZONE_UUID/data
 
-source ./scripts/services.sh
-source ./scripts/util.sh
+source ${DIR}/scripts/services.sh
+source ${DIR}/scripts/util.sh
 
 # No node in mako
 export PATH=$MINNOW_PATH/build/node/bin:$MINNOW_PATH/node_modules/.bin:/opt/local/bin:/usr/sbin:/usr/bin:$PATH

@@ -62,6 +62,7 @@ release: all deps docs $(SMF_MANIFESTS)
 	cp -r $(ROOT)/build/scripts $(TMPDIR)/root/opt/smartdc/mako/boot
 	ln -s /opt/smartdc/mako/boot/configure.sh \
 	    $(TMPDIR)/root/opt/smartdc/boot/configure.sh
+	chmod 755 $(TMPDIR)/root/opt/smartdc/mako/boot/configure.sh
 	rm $(TMPDIR)/root/opt/smartdc/mako/nginx/conf/*.default
 	(cd $(TMPDIR) && $(TAR) -jcf $(ROOT)/$(RELEASE_TARBALL) root site)
 	@rm -rf $(TMPDIR)
