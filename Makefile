@@ -35,7 +35,7 @@ TMPDIR          := /tmp/$(STAMP)
 # Repo-specific targets
 #
 .PHONY: all
-all: $(NGINX_EXEC)
+all: $(NGINX_EXEC) scripts
 
 $(TAP): | $(NPM_EXEC)
 	$(NPM) install
@@ -50,13 +50,18 @@ test: $(TAP)
 release: all deps docs $(SMF_MANIFESTS)
 	@echo "Building $(RELEASE_TARBALL)"
 	@mkdir -p $(TMPDIR)/root/opt/smartdc/mako
+	@mkdir -p $(TMPDIR)/root/opt/smartdc/boot
 	@mkdir -p $(TMPDIR)/site
 	@touch $(TMPDIR)/site/.do-not-delete-me
 	cp -r $(ROOT)/bin \
+	    $(ROOT)/boot \
 	    $(ROOT)/build/nginx \
 	    $(ROOT)/sapi_manifests \
 	    $(ROOT)/smf \
 	    $(TMPDIR)/root/opt/smartdc/mako/
+	cp -r $(ROOT)/build/scripts $(TMPDIR)/root/opt/smartdc/mako/boot
+	ln -s /opt/smartdc/mako/boot/configure.sh \
+	    $(TMPDIR)/root/opt/smartdc/boot/configure.sh
 	rm $(TMPDIR)/root/opt/smartdc/mako/nginx/conf/*.default
 	(cd $(TMPDIR) && $(TAR) -jcf $(ROOT)/$(RELEASE_TARBALL) root site)
 	@rm -rf $(TMPDIR)
