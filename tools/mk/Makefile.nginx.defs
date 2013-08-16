@@ -66,6 +66,7 @@ DISTCLEAN_FILES	+= $(NGINX_INSTALL)
 NGINX_CONFIG_FLAGS += \
 	--prefix=$(TOP)/$(NGINX_INSTALL) \
 	--with-http_dav_module \
+	--with-http_stub_status_module \
 	--with-cc-opt="-I/opt/local/include" \
 	--with-ld-opt="-L/opt/local/lib -R/opt/local/lib"
 
