@@ -12,7 +12,7 @@
 
 $(NGINX_EXEC): | deps/nginx/.git
 	(cd deps/nginx; ./auto/configure $(NGINX_CONFIG_FLAGS) && $(MAKE) && $(MAKE) install)
-	cp $(ROOT)/lib/nginx.conf $(NGINX_INSTALL)/conf/nginx.conf
+	cp $(ROOT)/sapi_manifests/mako/template $(NGINX_INSTALL)/conf/nginx.conf
 
 
 DISTCLEAN_FILES += $(NGINX_INSTALL)

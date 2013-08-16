@@ -21,12 +21,18 @@ http {
 		root		/manta;
 		server_name	localhost;
 
+		location /nginx_status
+		{
+			stub_status	on;
+			access_log	off;
+		}
+
 		location /
 		{
 			client_body_temp_path	/manta/nginx_temp;
 			create_full_put_path	on;
 			dav_access		user:rw  group:r  all:r;
-			dav_methods		PUT DELETE;
+			dav_methods		PUT DELETE MOVE;
 			expires			max;
 			fsync			on;
 			put_always_respond_md5	on;
