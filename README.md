@@ -69,10 +69,23 @@ Create a new repo called "some-cool-fish" in your "~/work" dir based on "eng.git
     .../eng/tools/mkrepo $HOME/work/some-cool-fish
 
 
-# Your Other Sections Here
+# Working with the nginx git submodule
 
-Add other sections to your README as necessary. E.g. Running a demo, adding
-development data.
+To update nginx, first checkout out and make changes to the mako branch of the
+github Joyent nginx fork located at https://github.com/joyent/nginx/tree/mako
 
+Once your changes have been committed to that repo, grab the git SHA for your
+changes and:
 
+    $ git clone git@git.joyent.com:mako.git
+    $ cd mako/
+    $ git submodule init
+    $ git submodule update
+    $ cd deps/nginx/
+    $ git checkout -b mako
+    $ git checkout [Latest joyent/nginx#mako git SHA]
+    $ cd ../..
+    $ git add deps/nginx
+    $ git diff --cached #to check the submodule git SHA
 
+Then you can commit and push like any other change.

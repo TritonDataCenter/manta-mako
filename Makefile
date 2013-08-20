@@ -33,7 +33,7 @@ JSSTYLE_FLAGS	= -f tools/jsstyle.conf
 #
 # Variables
 #
-NAME			= mola
+NAME			= mako
 NODE_PREBUILT_VERSION	= v0.8.18
 NODE_PREBUILT_TAG	= zone
 

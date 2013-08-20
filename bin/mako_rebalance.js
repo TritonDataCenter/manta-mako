@@ -22,7 +22,7 @@ var LOG = bunyan.createLogger({
 });
 var REBALANCE_CONFIG = (process.env.REBALANCE_CONFIG ||
                         process.argv[2] ||
-                        '/opt/smartdc/mako/etc/mako_rebalancer.config');
+                        '/opt/smartdc/mako/etc/mako_rebalancer_config.json');
 var MANTA_CLIENT = manta.createClientFromFileSync(REBALANCE_CONFIG, LOG);
 var MANTA_USER = MANTA_CLIENT.user;
 var REBALANCE_PATH_PREFIX = '/' + MANTA_USER + '/stor/manta_rebalance/do';
