@@ -18,25 +18,54 @@
 # Tools
 #
 TAP		:= ./node_modules/.bin/tap
+NPM		:= npm
 
 #
 # Files
 #
-DOC_FILES	 = index.restdown
+DOC_FILES	= index.restdown
+JS_FILES	:= $(shell find lib test bin -name '*.js')
+JSL_CONF_NODE	= tools/jsl.node.conf
+JSL_FILES_NODE	= $(JS_FILES)
+JSSTYLE_FILES	= $(JS_FILES)
+JSSTYLE_FLAGS	= -f tools/jsstyle.conf
+
+#
+# Variables
+#
+NAME			= mola
+NODE_PREBUILT_VERSION	= v0.8.18
+NODE_PREBUILT_TAG	= zone
 
 include ./tools/mk/Makefile.defs
+ifeq ($(shell uname -s),SunOS)
+	include ./tools/mk/Makefile.node_prebuilt.defs
+else
+	include ./tools/mk/Makefile.node.defs
+endif
+include ./tools/mk/Makefile.node_deps.defs
 include ./tools/mk/Makefile.nginx.defs
 
+#
+# MG Variables
+#
 ROOT            := $(shell pwd)
 RELEASE_TARBALL := mako-pkg-$(STAMP).tar.bz2
 TMPDIR          := /tmp/$(STAMP)
 
 #
+# v8plus uses the CTF tools as part of its build, but they can safely be
+# overridden here so that this works in dev zones without them.
+# See marlin.git Makefile.
+#
+NPM_ENV          = MAKE_OVERRIDES="CTFCONVERT=/bin/true CTFMERGE=/bin/true"
+
+#
 # Repo-specific targets
 #
 .PHONY: all
-all: $(NGINX_EXEC) scripts
-
+all: $(NGINX_EXEC) $(TAP) $(REPO_DEPS) scripts
+	$(NPM) rebuild
 $(TAP): | $(NPM_EXEC)
 	$(NPM) install
 
@@ -56,6 +85,8 @@ release: all deps docs $(SMF_MANIFESTS)
 	cp -r $(ROOT)/bin \
 	    $(ROOT)/boot \
 	    $(ROOT)/build/nginx \
+	    $(ROOT)/lib \
+	    $(ROOT)/node_modules \
 	    $(ROOT)/sapi_manifests \
 	    $(ROOT)/smf \
 	    $(TMPDIR)/root/opt/smartdc/mako/
@@ -77,5 +108,11 @@ publish: release
 	cp $(ROOT)/$(RELEASE_TARBALL) $(BITS_DIR)/mako/$(RELEASE_TARBALL)
 
 include ./tools/mk/Makefile.deps
+ifeq ($(shell uname -s),SunOS)
+	include ./tools/mk/Makefile.node_prebuilt.targ
+else
+	include ./tools/mk/Makefile.node.targ
+endif
+include ./tools/mk/Makefile.node_deps.targ
 include ./tools/mk/Makefile.nginx.targ
 include ./tools/mk/Makefile.targ

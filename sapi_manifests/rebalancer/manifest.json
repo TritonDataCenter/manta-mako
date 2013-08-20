@@ -1,0 +1,5 @@
+{
+    "name": "rebalancer",
+    "path": "/opt/smartdc/mako/etc/mako_rebalancer.config",
+    "master": true
+}

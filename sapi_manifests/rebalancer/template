@@ -1,0 +1,22 @@
+{
+    "manta_storage_id": "{{MANTA_STORAGE_ID}}",
+    "moray": {
+        "connectTimeout": 2000,
+        "host": "{{ELECTRIC_MORAY}}",
+        "port": 2020
+    },
+    "manta": {
+        "url": "{{MANTA_URL}}",
+        "user": "{{ADMIN_USERNAME}}",
+        "sign": {
+            "key": "/root/.ssh/id_rsa",
+            "keyId": "{{ADMIN_KEY_ID}}"
+        },
+        "retry": {
+            "attempts": 5,
+            "minTimeout": 1000
+        },
+        "connectTimeout": 1000,
+        "rejectUnauthorized": {{MANTA_REJECT_UNAUTHORIZED}}
+    }
+}
