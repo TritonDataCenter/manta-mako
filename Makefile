@@ -84,6 +84,7 @@ release: all deps docs $(SMF_MANIFESTS)
 	@touch $(TMPDIR)/site/.do-not-delete-me
 	cp -r $(ROOT)/bin \
 	    $(ROOT)/boot \
+	    $(ROOT)/build \
 	    $(ROOT)/build/nginx \
 	    $(ROOT)/lib \
 	    $(ROOT)/node_modules \
