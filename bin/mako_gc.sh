@@ -33,7 +33,8 @@ MPATH=/manta_gc/mako/$MANTA_STORAGE_ID
 PID=$$
 TMP_DIR=/tmp/mako_gc
 TOMB_DATE=$(date "+%Y-%m-%d")
-TOMB_DIR=/manta/tombstone/$TOMB_DATE
+TOMB_ROOT=/manta/tombstone
+TOMB_DIR=$TOMB_ROOT/$TOMB_DATE
 
 
 
@@ -168,8 +169,17 @@ then
     fi
 fi
 
+# We change to nobody:nobody since that's what nginx uses for file permissions.
+# Doing that will allow us to http MOVE files via nginx to the tombstone dir.
+if [ ! -d $TOMB_ROOT ]; then
+    mkdir $TOMB_ROOT
+    chown nobody:nobody $TOMB_ROOT
+fi
+if [ ! -d $TOMB_DIR ]; then
+    mkdir $TOMB_DIR
+    chown nobody:nobody $TOMB_DIR
+fi
 mkdir -p $TMP_DIR
-mkdir -p $TOMB_DIR
 
 while read -r JSON
 do
