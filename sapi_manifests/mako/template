@@ -11,8 +11,8 @@ http {
 	client_max_body_size 0;
 	default_type	application/octet-stream;
 	include		mime.types;
-        keepalive_timeout 0;
-        keepalive_requests 0;
+	keepalive_timeout 2147483647;
+	keepalive_requests 2147483647;
 	sendfile 	on;
 
 	server {
