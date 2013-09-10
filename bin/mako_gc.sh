@@ -35,7 +35,7 @@ TMP_DIR=/tmp/mako_gc
 TOMB_DATE=$(date "+%Y-%m-%d")
 TOMB_ROOT=/manta/tombstone
 TOMB_DIR=$TOMB_ROOT/$TOMB_DATE
-
+TOMB_DIRS_TO_KEEP=21
 
 
 # Mutables
@@ -46,6 +46,7 @@ SIGNATURE=""
 ERROR="true"
 FILE_COUNT=0
 OBJECT_COUNT=0
+TOMB_CLEAN_COUNT=0
 
 
 
@@ -80,7 +81,8 @@ function audit {
 \"cronExec\":1,\
 \"hostname\":\"$HOSTNAME\",\
 \"fileCount\":\"$FILE_COUNT\",\
-\"objectCount\":\"$OBJECT_COUNT\"\
+\"objectCount\":\"$OBJECT_COUNT\",\
+\"tombDirCleanupCount\":\"$TOMB_CLEAN_COUNT\"\
 }" >&2
 }
 
@@ -223,6 +225,19 @@ do
 
     log "success processing $MFILE."
 done <<< "$GET_RES"
+
+log "starting tombstone directory cleanup"
+
+TOMB_CLEAN_COUNT=$(ls $TOMB_ROOT | sort | head -n -$TOMB_DIRS_TO_KEEP | wc -l)
+ls $TOMB_ROOT | sort | head -n -$TOMB_DIRS_TO_KEEP | while read TOMB_DATE_DIR
+do
+    if [[ "$TOMB_DATE_DIR" == "" ]]; then
+        continue
+    fi
+    TOMB_DIR_TO_CLEANUP="$TOMB_ROOT/$TOMB_DATE_DIR"
+    log "cleaning up $TOMB_DIR_TO_CLEANUP"
+    rm -rf $TOMB_DIR_TO_CLEANUP
+done
 
 ERROR="false"
 audit

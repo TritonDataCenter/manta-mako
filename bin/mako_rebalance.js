@@ -220,6 +220,7 @@ function rebalanceMantaObject(_, mantaObject, cb) {
                         if (err && !err.ok) {
                                 LOG.error({
                                         err: err,
+                                        stack: err.stack,
                                         object: obj
                                 }, 'error with object');
                         }
