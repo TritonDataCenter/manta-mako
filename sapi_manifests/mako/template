@@ -32,7 +32,7 @@ http {
 			client_body_temp_path	/manta/nginx_temp;
 			create_full_put_path	on;
 			dav_access		user:rw  group:r  all:r;
-			dav_methods		PUT DELETE MOVE;
+			dav_methods		PUT MOVE;
 			expires			max;
 			fsync			on;
 			put_always_respond_md5	on;
