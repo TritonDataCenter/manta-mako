@@ -14,6 +14,7 @@ http {
 	keepalive_timeout 2147483647;
 	keepalive_requests 2147483647;
 	sendfile 	on;
+	send_timeout	300s
 
 	server {
 		autoindex 	on;
