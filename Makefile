@@ -51,7 +51,7 @@ include ./tools/mk/Makefile.nginx.defs
 #
 ROOT            := $(shell pwd)
 RELEASE_TARBALL := mako-pkg-$(STAMP).tar.bz2
-TMPDIR          := /tmp/$(STAMP)
+RELSTAGEDIR          := /tmp/$(STAMP)
 
 #
 # v8plus uses the CTF tools as part of its build, but they can safely be
@@ -83,10 +83,10 @@ scripts: deps/manta-scripts/.git
 .PHONY: release
 release: all deps docs $(SMF_MANIFESTS)
 	@echo "Building $(RELEASE_TARBALL)"
-	@mkdir -p $(TMPDIR)/root/opt/smartdc/mako
-	@mkdir -p $(TMPDIR)/root/opt/smartdc/boot
-	@mkdir -p $(TMPDIR)/site
-	@touch $(TMPDIR)/site/.do-not-delete-me
+	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/mako
+	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/boot
+	@mkdir -p $(RELSTAGEDIR)/site
+	@touch $(RELSTAGEDIR)/site/.do-not-delete-me
 	cp -r $(ROOT)/bin \
 	    $(ROOT)/boot \
 	    $(ROOT)/build \
@@ -95,14 +95,14 @@ release: all deps docs $(SMF_MANIFESTS)
 	    $(ROOT)/node_modules \
 	    $(ROOT)/sapi_manifests \
 	    $(ROOT)/smf \
-	    $(TMPDIR)/root/opt/smartdc/mako/
-	cp -r $(ROOT)/build/scripts $(TMPDIR)/root/opt/smartdc/mako/boot
+	    $(RELSTAGEDIR)/root/opt/smartdc/mako/
+	cp -r $(ROOT)/build/scripts $(RELSTAGEDIR)/root/opt/smartdc/mako/boot
 	ln -s /opt/smartdc/mako/boot/configure.sh \
-	    $(TMPDIR)/root/opt/smartdc/boot/configure.sh
-	chmod 755 $(TMPDIR)/root/opt/smartdc/mako/boot/configure.sh
-	rm $(TMPDIR)/root/opt/smartdc/mako/nginx/conf/*.default
-	(cd $(TMPDIR) && $(TAR) -jcf $(ROOT)/$(RELEASE_TARBALL) root site)
-	@rm -rf $(TMPDIR)
+	    $(RELSTAGEDIR)/root/opt/smartdc/boot/configure.sh
+	chmod 755 $(RELSTAGEDIR)/root/opt/smartdc/mako/boot/configure.sh
+	rm $(RELSTAGEDIR)/root/opt/smartdc/mako/nginx/conf/*.default
+	(cd $(RELSTAGEDIR) && $(TAR) -jcf $(ROOT)/$(RELEASE_TARBALL) root site)
+	@rm -rf $(RELSTAGEDIR)
 
 .PHONY: publish
 publish: release
