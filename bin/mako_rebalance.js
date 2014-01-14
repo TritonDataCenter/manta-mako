@@ -215,21 +215,21 @@ function rebalanceMantaObject(_, mantaObject, cb) {
         var toProcess = 0;
         var processed = 0;
         var endCalled = false;
-        var queue = vasync.queue(function (obj, subcb) {
-                rebalance(_, obj, function (err) {
+        var queue = vasync.queue(function (objs, subcb) {
+                rebalance(_, objs, function (err) {
                         if (err && !err.ok) {
                                 LOG.error({
                                         err: err,
                                         stack: err.stack,
-                                        object: obj
-                                }, 'error with object');
+                                        object: objs
+                                }, 'error with objects');
                         }
                         ++processed;
                         //Don't pass along the error, just keep going...
                         //TODO: Is ^^ the right call?
                         subcb();
                 });
-        }, 1); //Serialize, please.
+        }, 1); //Serialize, please, to keep load down.
 
         function tryEnd(err) {
                 if (queue.npending === 0 && toProcess === processed &&
@@ -246,6 +246,8 @@ function rebalanceMantaObject(_, mantaObject, cb) {
                 }
 
                 var c = carrier.carry(stream);
+                var prevObjectId;
+                var objs = [];
 
                 c.on('line', function (line) {
                         if (line === '') {
@@ -262,8 +264,18 @@ function rebalanceMantaObject(_, mantaObject, cb) {
                                 return;
                         }
 
-                        ++toProcess;
-                        queue.push(dets, tryEnd);
+                        //Make batches for each object.
+                        if (prevObjectId !== dets.objectId) {
+                                if (objs.length > 0) {
+                                        ++toProcess;
+                                        //We have to wrap them, otherwise
+                                        // vasync unrolls them.
+                                        queue.push({ objects: objs }, tryEnd);
+                                }
+                                objs = [];
+                                prevObjectId = dets.objectId;
+                        }
+                        objs.push(dets);
                 });
 
                 c.on('error', function (err2) {
@@ -271,6 +283,10 @@ function rebalanceMantaObject(_, mantaObject, cb) {
                 });
 
                 c.on('end', function () {
+                        if (objs.length > 0) {
+                                ++toProcess;
+                                queue.push({ objects: objs }, tryEnd);
+                        }
                         LOG.info({
                                 mantaObjectPath: mantaObjectPath
                         }, 'Done reading manta object');
@@ -283,21 +299,28 @@ function rebalanceMantaObject(_, mantaObject, cb) {
 }
 
 
-function rebalance(_, object, cb) {
+function rebalance(_, objects, cb) {
         LOG.info({
-                object: object
-        }, 'starting pipeline for object');
+                objects: objects
+        }, 'starting pipeline for objects');
+
+        //Unwrap.  See above...
+        objects = objects.objects;
+        if (objects.length === 0) {
+                cb();
+                return;
+        }
 
         vasync.pipeline({
                 funcs: [
-                        setupPaths,
-                        pullMorayObject,
+                        setupObjectData,
+                        pullMorayObjects,
                         pullObject,
-                        updateMorayObject,
+                        updateMorayObjects,
                         tombstoneOldObject
                 ],
                 arg: {
-                        object: object,
+                        objects: objects,
                         pc: _
                 }
         }, function (err) {
@@ -306,12 +329,16 @@ function rebalance(_, object, cb) {
 }
 
 
-function setupPaths(_, cb) {
-        var o = _.object;
+function setupObjectData(_, cb) {
+        var o = _.objects[0];
         var today = (new Date()).toISOString().substring(0, 10);
-        _.localDirectory = '/manta/' + o.owner;
+        //For x-account links.
+        var user = (o.creator || o.owner);
+        _.objectId = o.objectId;
+        _.md5 = o.md5;
+        _.localDirectory = '/manta/' + user;
         _.localFilename = _.localDirectory + '/' + o.objectId;
-        _.remotePath = '/' + o.owner + '/' + o.objectId;
+        _.remotePath = '/' + user + '/' + o.objectId;
         _.remoteHost = o.oldShark.manta_storage_id;
         _.remoteLocation = 'http://' + _.remoteHost + _.remotePath;
         _.remoteTomb = '/tombstone/' + today + '/' + o.objectId;
@@ -319,41 +346,72 @@ function setupPaths(_, cb) {
 }
 
 
-function pullMorayObject(_, cb) {
-        var key = _.object.key;
-        _.pc.morayClient.getObject(MANTA, key, {}, function (err, obj) {
-                if (err && err.name === 'ObjectNotFoundError') {
-                        LOG.info({
-                                key: key
-                        }, 'ObjectNotFoundError for key, ignoring');
-                        cb(OK_ERROR);
-                        return;
-                }
-                if (err) {
-                        cb(err);
-                        return;
+function pullMorayObjects(_, cb) {
+        var keys = _.objects.map(function (o) {
+                return (o.key);
+        });
+
+        function getMorayObject(key, subcb) {
+                _.pc.morayClient.getObject(MANTA, key, {}, function (err, obj) {
+                        subcb(err, obj);
+                });
+        }
+
+        vasync.forEachParallel({
+                'func': getMorayObject,
+                'inputs': keys
+        }, function (err, results) {
+                var morayObjects = [];
+                //Pull out all the results into morayObjects
+                var i;
+                for (i = 0; i < results.operations.length; ++i) {
+                        var obj = _.objects[i];
+                        var key = keys[i];
+                        var oper = results.operations[i];
+                        morayObjects[i] = null;
+                        if (oper.status === 'ok') {
+                                var mobj = oper.result;
+                                //If the etag is off, just ignore.  We don't
+                                // want to accidentally overwrite data...
+
+                                //TODO: Checking this here risks creating cruft
+                                // on the remote node of the MOVE fails.
+                                if (mobj._etag !== obj.morayEtag) {
+                                        LOG.info({
+                                                objectId: _.objectId,
+                                                key: key,
+                                                objEtag: mobj._etag,
+                                                morayObjEtag: obj.morayEtag
+                                        }, 'Moray etag mismatch.  Ignoring.');
+                                } else {
+                                        LOG.info({
+                                                objectId: _.objectId,
+                                                key: key
+                                        }, 'got moray object for key');
+                                        morayObjects[i] = oper.result;
+                                }
+                        } else {
+                                err = oper.err;
+                                if (err.name === 'ObjectNotFoundError') {
+                                        LOG.info({
+                                                objectId: _.objectId,
+                                                key: key
+                                        }, 'ObjectNotFoundError, ignoring');
+                                } else {
+                                        //Just break out of the whole thing.
+                                        return (cb(err));
+                                }
+                        }
                 }
 
-                //If the etag is off, just ignore.  We don't want to
-                // accidentally overwrite data...
-
-                //TODO: Checking this here risks creating cruft on the remote
-                // node of the MOVE fails.
-                if (obj._etag !== _.object.morayEtag) {
-                        LOG.info({
-                                key: key,
-                                objEtag: obj._etag,
-                                morayObjEtag: _.object.morayEtag
-                        }, 'Moray etag mismatch.  Ignoring object.');
-                        cb(OK_ERROR);
-                        return;
+                //Check that we actually have work to do.
+                for (i = 0; i < morayObjects.length; ++i) {
+                        if (morayObjects[i] !== null) {
+                                _.morayObjects = morayObjects;
+                                return (cb());
+                        }
                 }
-
-                _.morayObject = obj;
-                LOG.info({
-                        key: key
-                }, 'got moray object for key');
-                cb();
+                return (cb(OK_ERROR));
         });
 }
 
@@ -379,8 +437,7 @@ function pullObject(_, cb) {
                         }
 
                         var fo = { mode: _.pc.fileStat.mode };
-                        var tmpFileName = LOCAL_TMP_DIR + '/' +
-                                _.object.objectId;
+                        var tmpFileName = LOCAL_TMP_DIR + '/' + _.objectId;
                         var fstream = fs.createWriteStream(tmpFileName, fo);
                         var hash = crypto.createHash('md5');
 
@@ -392,12 +449,12 @@ function pullObject(_, cb) {
                                 }
 
                                 var calMd5 = hash.digest('base64');
-                                if (calMd5 !== _.object.md5) {
+                                if (calMd5 !== _.md5) {
                                         error = new Error();
                                         error.code = 'Md5Mismatch';
                                         error.message = 'Calculated md5: ' +
                                                 calMd5 + ' didn\'t match ' +
-                                                _.object.md5;
+                                                _.md5;
                                         cb(error);
                                         return;
                                 }
@@ -464,47 +521,74 @@ function createLocalDirectory(_, cb) {
 }
 
 
-function updateMorayObject(_, cb) {
-        var oldShark = _.object.oldShark;
-        var newShark = _.object.newShark;
+function updateMorayObjects(_, cb) {
 
-        var b = MANTA;
-        var k = _.morayObject.key;
-        var v = _.morayObject.value;
-        var etag = _.morayObject._etag;
-        var op = { etag: etag };
+        function updateMorayObject(index, subcb) {
+                var obj = _.objects[index];
+                var mobj = _.morayObjects[index];
 
-        for (var i = 0; i < v.sharks.length; ++i) {
-                var s = v.sharks[i];
-                if (s.manta_storage_id === oldShark.manta_storage_id &&
-                    s.datacenter === oldShark.datacenter) {
-                        v.sharks[i] = newShark;
-                }
-        }
-
-        LOG.info({
-                key: k,
-                sharks: v.sharks
-        }, 'updating moray object');
-
-        //TODO: Will the etag mismatch also catch deleted objects?  How can
-        // we detect that and get rid of the object (since it would be cruft
-        // at that point?)
-        _.pc.morayClient.putObject(b, k, v, op, function (e) {
-                var ece = 'EtagConflictError';
-                if (e && e.name !== ece) {
-                        cb(e);
+                //If there's no corresponding moray object, we don't need
+                // to update anything...
+                if (!mobj) {
+                        subcb();
                         return;
                 }
-                if (e && e.name === ece) {
-                        LOG.info({
-                                key: k
-                        }, 'Etag conflict');
+
+                var oldShark = obj.oldShark;
+                var newShark = obj.newShark;
+
+                var b = MANTA;
+                var k = mobj.key;
+                var v = mobj.value;
+                var etag = mobj._etag;
+                var op = { etag: etag };
+
+                for (var i = 0; i < v.sharks.length; ++i) {
+                        var s = v.sharks[i];
+                        if (s.manta_storage_id === oldShark.manta_storage_id &&
+                            s.datacenter === oldShark.datacenter) {
+                                v.sharks[i] = newShark;
+                        }
                 }
-                cb();
+
+                LOG.info({
+                        objectId: _.objectId,
+                        key: k,
+                        sharks: v.sharks
+                }, 'updating moray object');
+
+                //TODO: Will the etag mismatch also catch deleted objects?  How
+                // can we detect that and get rid of the object (since it would
+                // be cruft at that point?)
+                _.pc.morayClient.putObject(b, k, v, op, function (e) {
+                        var ece = 'EtagConflictError';
+                        if (e && e.name !== ece) {
+                                subcb(e);
+                                return;
+                        }
+                        if (e && e.name === ece) {
+                                LOG.info({
+                                        objectId: _.objectId,
+                                        key: k
+                                }, 'Etag conflict');
+                        }
+                        subcb();
+                });
+        }
+
+        //Kinda lame...
+        var seq = [];
+        for (var n = 0; n < _.objects.length; ++n) {
+                seq.push(n);
+        }
+        vasync.forEachParallel({
+                'func': updateMorayObject,
+                'inputs': seq
+        }, function (err, results) {
+                //And error passed through should be something bad...
+                return (cb(err));
         });
 }
-
 
 function tombstoneOldObject(_, cb) {
         var opts = {
@@ -518,7 +602,7 @@ function tombstoneOldObject(_, cb) {
 
         LOG.info({
                 opts: opts,
-                key: _.object.key
+                objectId: _.objectId
         }, 'moving remote object');
 
         var req = http.request(opts, function (res) {
