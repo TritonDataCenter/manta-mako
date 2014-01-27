@@ -28,12 +28,22 @@ function manta_update_compute_id {
     local SERVER_UUID=$(mdata-get sdc:server_uuid)
     [[ $? -eq 0 ]] || fatal "Unable to retrieve server_uuid"
 
-    local MANTA_COMPUTE_ID=$(curl -s ${SAPI_URL}/configs/$(zonename) | json metadata.SERVER_COMPUTE_ID_MAPPING.${SERVER_UUID})
+    local TMP_FILE=/var/tmp/manta_update_compute_id.$$
+    local ZONE_UUID=$(zonename)
+
+    curl -s ${SAPI_URL}/configs/$(zonename) 2>&1 > ${TMP_FILE}
+    local CURL_EXIT=$?
+    [[ $CURL_EXIT -eq 0 ]] || fatal "unable to fetch config from sapi, exit code $CURL_EXIT"
+
+    local MANTA_COMPUTE_ID=$(json -f ${TMP_FILE} metadata.SERVER_COMPUTE_ID_MAPPING.${SERVER_UUID})
     [[ $? -eq 0 ]] || fatal "Unable to retrieve manta_compute_id"
 
     local update=/opt/smartdc/config-agent/bin/mdata-update
     ${update} MANTA_COMPUTE_ID $MANTA_COMPUTE_ID
     [[ $? -eq 0 ]] || fatal "Unable to update manta_compute_id"
+
+    rm ${TMP_FILE}
+    [[ $? -eq 0 ]] || fatal "Unable to remove $TMP_FILE"
 }
 
 
