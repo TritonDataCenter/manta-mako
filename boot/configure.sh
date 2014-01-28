@@ -33,6 +33,12 @@ function manta_update_compute_id {
 
     curl -s ${SAPI_URL}/configs/$(zonename) 2>&1 > ${TMP_FILE}
     local CURL_EXIT=$?
+    if [[ $CURL_EXIT -eq 6 ]]; then
+        #Gather some debug information
+        cp /etc/resolv.conf /var/tmp/resolv.conf.$$
+        local SAPI_HOST=$(echo ${SAPI_URL} | cut -d '/' -f 3)
+        dig ${SAPI_HOST} > /var/tmp/sapi_host_dig.$$
+    fi
     [[ $CURL_EXIT -eq 0 ]] || fatal "unable to fetch config from sapi, exit code $CURL_EXIT"
 
     local MANTA_COMPUTE_ID=$(json -f ${TMP_FILE} metadata.SERVER_COMPUTE_ID_MAPPING.${SERVER_UUID})
