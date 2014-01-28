@@ -31,14 +31,18 @@ function manta_update_compute_id {
     local TMP_FILE=/var/tmp/manta_update_compute_id.$$
     local ZONE_UUID=$(zonename)
 
-    curl -s ${SAPI_URL}/configs/$(zonename) 2>&1 > ${TMP_FILE}
-    local CURL_EXIT=$?
-    if [[ $CURL_EXIT -eq 6 ]]; then
-        #Gather some debug information
-        cp /etc/resolv.conf /var/tmp/resolv.conf.$$
-        local SAPI_HOST=$(echo ${SAPI_URL} | cut -d '/' -f 3)
-        dig ${SAPI_HOST} > /var/tmp/sapi_host_dig.$$
-    fi
+    # See MANTA-1981... a loop here is a work around for an un-root-caused
+    # failure case.
+    local CURL_EXIT=1
+    for i in {1..60}; do
+        curl -s ${SAPI_URL}/configs/$(zonename) 2>&1 > ${TMP_FILE}
+        CURL_EXIT=$?
+        if [[ $CURL_EXIT -eq 0 ]]; then
+            break;
+        fi
+        echo "unable to fetch config from sapi, exit code $CURL_EXIT, sleeping"
+        sleep 1;
+    done
     [[ $CURL_EXIT -eq 0 ]] || fatal "unable to fetch config from sapi, exit code $CURL_EXIT"
 
     local MANTA_COMPUTE_ID=$(json -f ${TMP_FILE} metadata.SERVER_COMPUTE_ID_MAPPING.${SERVER_UUID})
