@@ -1,0 +1,22 @@
+{
+	"registration": {
+		"domain": "{{SERVICE_NAME}}",
+		"type": "host",
+		"ttl": 60,
+		"aliases": [
+			"{{MANTA_STORAGE_ID}}"
+		]
+	},
+	"zookeeper": {
+		"servers": [
+			{{#ZK_SERVERS}}
+				{
+					"host": "{{host}}",
+					"port": {{port}}
+				}{{^last}}, {{/last}}
+			{{/ZK_SERVERS}}
+		],
+		"timeout": 60000
+	},
+	"adminIp": "{{MANTA_IP}}"
+}
