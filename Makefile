@@ -34,7 +34,7 @@ JSSTYLE_FLAGS	= -f tools/jsstyle.conf
 # Variables
 #
 NAME			= mako
-NODE_PREBUILT_VERSION	= v0.8.18
+NODE_PREBUILT_VERSION	= v0.8.26
 NODE_PREBUILT_TAG	= zone
 
 include ./tools/mk/Makefile.defs
