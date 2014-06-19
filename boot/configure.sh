@@ -65,6 +65,8 @@ function manta_setup_minnow {
 
     svccfg import /opt/smartdc/minnow/smf/manifests/minnow.xml
     svcadm enable minnow
+
+    manta_add_logadm_entry "minnow"
 }
 
 
