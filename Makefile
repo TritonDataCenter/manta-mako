@@ -97,9 +97,9 @@ release: all deps docs $(SMF_MANIFESTS)
 	    $(ROOT)/smf \
 	    $(RELSTAGEDIR)/root/opt/smartdc/mako/
 	cp -r $(ROOT)/build/scripts $(RELSTAGEDIR)/root/opt/smartdc/mako/boot
-	ln -s /opt/smartdc/mako/boot/configure.sh \
-	    $(RELSTAGEDIR)/root/opt/smartdc/boot/configure.sh
-	chmod 755 $(RELSTAGEDIR)/root/opt/smartdc/mako/boot/configure.sh
+	ln -s /opt/smartdc/mako/boot/setup.sh \
+	    $(RELSTAGEDIR)/root/opt/smartdc/boot/setup.sh
+	chmod 755 $(RELSTAGEDIR)/root/opt/smartdc/mako/boot/setup.sh
 	rm $(RELSTAGEDIR)/root/opt/smartdc/mako/nginx/conf/*.default
 	(cd $(RELSTAGEDIR) && $(TAR) -jcf $(ROOT)/$(RELEASE_TARBALL) root site)
 	@rm -rf $(RELSTAGEDIR)
