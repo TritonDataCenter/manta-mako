@@ -65,7 +65,7 @@ NPM_ENV          = MAKE_OVERRIDES="CTFCONVERT=/bin/true CTFMERGE=/bin/true"
 #
 .PHONY: all
 all: $(NGINX_EXEC) $(TAP) $(REPO_DEPS) scripts
-	$(NPM) rebuild
+	$(NPM) install
 $(TAP): | $(NPM_EXEC)
 	$(NPM) install
 
