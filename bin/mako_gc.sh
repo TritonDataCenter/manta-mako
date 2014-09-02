@@ -41,6 +41,7 @@ LOG_TYPE='application/x-bzip2'
 MPATH=/manta_gc/mako/$MANTA_STORAGE_ID
 PID=$$
 TMP_DIR=/tmp/mako_gc
+PID_FILE=/tmp/mako_gc.pid
 TOMB_DATE=$(date "+%Y-%m-%d")
 TOMB_ROOT=/manta/tombstone
 TOMB_DIR=$TOMB_ROOT/$TOMB_DATE
@@ -63,7 +64,7 @@ TOMB_CLEAN_COUNT=0
 
 function fatal {
     local LNOW=`date "+%Y-%m-%dT%H:%M:%S.000Z"`
-    echo "$LNOW: $(basename $0): fatal error: $*" >&2
+    echo "$LNOW: $(basename $0) ($PID): fatal error: $*" >&2
     audit
     exit 1
 }
@@ -71,7 +72,7 @@ function fatal {
 
 function log {
     local LNOW=`date "+%Y-%m-%dT%H:%M:%S.000Z"`
-    echo "$LNOW: $(basename $0): info: $*" >&2
+    echo "$LNOW: $(basename $0) ($PID): info: $*" >&2
 }
 
 
@@ -164,6 +165,20 @@ function manta_delete() {
 
 : ${MANTA_STORAGE_ID:?"Manta storage id must be set."}
 
+# Check the last pid to see if a previous cron is still running...
+LAST_PID=$(cat $PID_FILE 2>/dev/null)
+
+if [[ -n "$LAST_PID" ]]; then
+    ps -p $LAST_PID >/dev/null
+    if [[ $? -eq 0 ]]; then
+        echo "$0 process still running.  Exiting..."
+        exit 1
+    fi
+fi
+
+echo -n $PID >$PID_FILE
+
+# Ok, we're good to start gc
 log "starting gc"
 
 GET_RES=`manta_get_no_fatal $MPATH`
@@ -206,7 +221,7 @@ do
 
     log "Processing manta object $MFILE"
 
-    while read -r LINE
+    cat "$LFILE" | while read -r LINE
     do
         #Filter out any lines that aren't meant for this storage node...
         if [[ ! $LINE =~ mako.*$MANTA_STORAGE_ID ]]
@@ -225,9 +240,10 @@ do
         else
             auditRow "true" "$OBJECT" "$TOMB_DIR"
         fi
-    done < "$LFILE"
+    done
 
     rm $LFILE
+    [[ $? -eq 0 ]] || fatal "Unable to rm $LFILE.  Something is really wrong."
     manta_delete $MFILE
 
     ((FILE_COUNT++))
@@ -250,4 +266,8 @@ done
 
 ERROR="false"
 audit
+
+# Clean up the last pid file...
+rm $PID_FILE
+
 exit 0;
