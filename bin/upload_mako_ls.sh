@@ -103,8 +103,9 @@ MANTA_DIR=/mako
 
 mkdir -p $TMP_DIR
 
-# %p is filename, %s is size in bytes, %T@ is last modified time, unix time
-find /manta -type f -printf '%p\t%s\t%T@\n' >$LISTING_FILE
+# %p is filename, %s is *logical* size in *bytes*, %T@ is last modified time,
+# %unix time, %k is the *physical* size in *kilobytes*
+find /manta -type f -printf '%p\t%s\t%T@\t%k\n' >$LISTING_FILE
 
 manta_put_directory $MANTA_DIR
 
