@@ -85,7 +85,7 @@ function manta_put() {
         -H "Authorization: Signature $AUTHZ_HEADER,signature=\"$SIGNATURE\"" \
         -H "Connection: close" \
         $MANTA_URL/$MANTA_USER/stor$1 \
-        --data-binary @$2 \
+        -T $2 \
         || fatal "unable to put $1"
 }
 
