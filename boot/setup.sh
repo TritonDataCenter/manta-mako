@@ -134,8 +134,11 @@ function manta_setup_crons {
     crontab -l > $crontab
     [[ $? -eq 0 ]] || fatal "Unable to write to $crontab"
 
-    echo '12 * * * * /opt/smartdc/mako/bin/mako_gc.sh >>/var/log/mako-gc.log 2>&1' >>$crontab
-    echo '32 11 * * * /opt/smartdc/mako/bin/upload_mako_ls.sh >>/var/log/mako-ls-upload.log 2>&1' >>$crontab
+    #Before you change cron scheduling, please consult the Mola System "Crons"
+    # Overview documentation (manta-mola.git/docs/system-crons)
+
+    echo '15 12 * * * /opt/smartdc/mako/bin/mako_gc.sh >>/var/log/mako-gc.log 2>&1' >>$crontab
+    echo '1 8 * * * /opt/smartdc/mako/bin/upload_mako_ls.sh >>/var/log/mako-ls-upload.log 2>&1' >>$crontab
 
     crontab $crontab
     [[ $? -eq 0 ]] || fatal "Unable import crons"
