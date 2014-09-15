@@ -8,76 +8,34 @@
     Copyright (c) 2014, Joyent, Inc.
 -->
 
-# Joyent Engineering Guide
+# manta-mako
 
-Repository: <git@git.joyent.com:eng.git>
-Browsing: <https://mo.joyent.com/eng>
-Who: Trent Mick, Dave Pacheco
-Docs: <https://mo.joyent.com/docs/eng>
-Tickets/bugs: <https://devhub.joyent.com/jira/browse/TOOLS>
+This repository is part of the Joyent Manta project.  For contribution
+guidelines, issues, and general documentation, visit the main
+[Manta](http://github.com/joyent/manta) project page.
 
-
-# Overview
-
-This repo serves two purposes: (1) It defines the guidelines and best
-practices for Joyent engineering work (this is the primary goal), and (2) it
-also provides boilerplate for an SDC project repo, giving you a starting
-point for many of the suggestion practices defined in the guidelines. This is
-especially true for node.js-based REST API projects.
-
-Start with the guidelines: <https://head.no.de/docs/eng>
-
+Mako can refer to this repository or the zone in Manta that stores Manta
+objects.  The zone that stores objects is also known as a "storage" zone.
+[Nginx](http://nginx.org/) is the server that actually puts and gets the objects
+to/from disk.
 
 # Repository
 
+    bin/            Commands available in $PATH, including commands that work
+                    in conjunction with Manta Garbage Collection
+                    (manta-mola.git)
+    boot/           Configuration scripts on zone setup.
     deps/           Git submodules and/or commited 3rd-party deps should go
                     here. See "node_modules/" for node.js deps.
-    docs/           Project docs (restdown)
-    lib/            Source files.
     node_modules/   Node.js deps, either populated at build time or commited.
                     See Managing Dependencies.
-    pkg/            Package lifecycle scripts
+    sapi_manifests/ SAPI manifests for zone configuration.
     smf/manifests   SMF manifests
-    smf/methods     SMF method scripts
     test/           Test suite (using node-tap)
     tools/          Miscellaneous dev/upgrade/deployment tools and data.
     Makefile
     package.json    npm module info (holds the project version)
     README.md
-
-
-# Development
-
-To run the boilerplate API server:
-
-    git clone git@git.joyent.com:eng.git
-    cd eng
-    git submodule update --init
-    make all
-    node server.js
-
-To update the guidelines, edit "docs/index.restdown" and run `make docs`
-to update "docs/index.html".
-
-Before commiting/pushing run `make prepush` and, if possible, get a code
-review.
-
-
-
-# Testing
-
-    make test
-
-If you project has setup steps necessary for testing, then describe those
-here.
-
-
-# Starting a Repo Based on eng.git
-
-Create a new repo called "some-cool-fish" in your "~/work" dir based on "eng.git":
-
-    .../eng/tools/mkrepo $HOME/work/some-cool-fish
-
 
 # Working with the nginx git submodule
 
@@ -87,7 +45,7 @@ github Joyent nginx fork located at https://github.com/joyent/nginx/tree/mako
 Once your changes have been committed to that repo, grab the git SHA for your
 changes and:
 
-    $ git clone git@git.joyent.com:mako.git
+    $ git clone git@github.com:joyent/manta-mako.git
     $ cd mako/
     $ git submodule init
     $ git submodule update
