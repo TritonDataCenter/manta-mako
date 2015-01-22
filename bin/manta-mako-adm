@@ -1,0 +1,311 @@
+#!/bin/bash
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+
+#
+# Copyright (c) 2015, Joyent, Inc.
+#
+
+#
+# manta-mako-adm: one-off tool to enable or disable writes to a mako zone.  This
+# should be run inside the mako zone that you want to update.
+#
+# Implementation notes: Recall that the minnow service inside each mako zone is
+# responsible for reporting current capacity every few seconds to a special
+# bucket in Moray.  Muskie uses this information to select makos for storing new
+# objects.  But muskie ignores makos whose records are out of date.  To disable
+# writes to a mako, we need to (a) disable the minnow service, and (b) write a
+# record with an old timestamp.  To enable writes again, we need only enable
+# minnow again.
+#
+# To keep this at least somewhat manageable, this tool provides commands to
+# enable writes, disable writes, and show the current write state.  It uses both
+# the state of the minnow service and the timestamp on the most recent record,
+# and it reports if these are inconsistent.
+#
+
+set -o pipefail
+
+m_arg0="$(basename ${BASH_SOURCE[0]})"
+m_minnow_config=/opt/smartdc/minnow/etc/config.json
+m_minnow_status="unknown"
+m_moray_bucket=""
+m_moray_host=""
+m_moray_port=""
+m_mako_storid=""
+m_record_file="${TMP:-/var/tmp}/$m_arg0.$$.record-old.json"
+m_record_file_new="${TMP:-/var/tmp}/$m_arg0.$$.record-new.json"
+m_record_key=""
+m_record_timestamp=""
+m_timestamp_disabled="1356998400000"
+m_show_warning=false
+
+#
+# warn ...: emit messages to stderr
+#
+function warn
+{
+	echo "$m_arg0: $@" >&2
+}
+
+#
+# fail ...: emit messages to stderr and exit with failure
+#
+function fail
+{
+	echo "$m_arg0: $@" >&2
+	exit 1
+}
+
+#
+# usage [...]: emit error message to stderr (if specified), then print usage
+# help and exit with failure.
+#
+function usage
+{
+	if [[ "$@" ]]; then
+		echo "$m_arg0: $@" >&2
+	fi
+	cat <<EOF
+usage: $m_arg0 (enable-writes | disable-writes | show)
+
+Enable or disable writes to a given mako (storage) zone within Manta.  This
+command should be run inside the mako zone you want to manage.
+
+Note: This change is not persistent across zone upgrades.
+EOF
+	exit 2
+}
+
+#
+# init_prereqs: check various environmental settings before we get too far.
+# We handle failures later on, but this allows for clearer error messages for
+# common misconfigurations (e.g., trying to run this from the wrong zone).
+#
+function init_prereqs
+{
+	if ! type findobjects > /dev/null 2>&1; then
+		fail "did not find \"findobjects\" command on PATH"
+	fi
+
+	if [[ ! -f "$m_minnow_config" ]]; then
+		fail "did not find minnow config at \"$m_minnow_config\""
+	fi
+}
+
+#
+# init_config: loads required configuration from the minnow config file
+#
+function init_config
+{
+	if ! m_moray_bucket="$(json moray.bucket.name < "$m_minnow_config")" ||
+	   ! m_moray_host="$(json moray.host < "$m_minnow_config")" ||
+	   ! m_moray_port="$(json moray.port < "$m_minnow_config")" ||
+	   ! m_mako_storid="$(json manta_storage_id < \
+	       "$m_minnow_config")"; then
+		fail "failed to retrieve minnow config"
+	fi
+}
+
+#
+# load_status: load the current state of writes to this shard.  As described
+# above, this comprises two pieces: the state of the minnow service, and the
+# timestamp of the Moray record for this mako.
+#
+function load_status
+{
+	if ! m_minnow_status="$(svcs -Hostate minnow)" ||
+	   ! m_moray_bucket="$(json moray.bucket.name < "$m_minnow_config")" ||
+	   ! m_moray_host="$(json moray.host < "$m_minnow_config")" ||
+	   ! m_moray_port="$(json moray.port < "$m_minnow_config")" ||
+	   ! m_mako_storid="$(json manta_storage_id < \
+	       "$m_minnow_config")"; then
+		fail "failed to retrieve minnow status or config"
+	fi
+
+	if ! findobjects -h "$m_moray_host" -p "$m_moray_port" \
+	    "$m_moray_bucket" "manta_storage_id=$m_mako_storid" \
+	    > "$m_record_file"; then
+		fail "failed to retrieve mako config from moray"
+	fi
+
+	if ! m_record_timestamp="$(json value.timestamp < \
+	    "$m_record_file")" ||
+	   ! m_record_key="$(json key < $m_record_file)"; then
+		fail "missing timestamp or key in saved record"
+	fi
+}
+
+#
+# check_status: validates the state read by load_status().  If the state is
+# consistent (minnow online and a recent record OR minnow offline and an
+# out-of-date record), then returns 0 without doing anything.  If the state is
+# inconsistent, we emit a warning and exit 1.
+#
+# When the user has just asked us to show the status, we run this function
+# to check these cases and emit these warnings.  We also use this function after
+# making a change (e.g., enabling minnow) in order to wait for the state to
+# converge to what we expect.  In that case, we redirect the warnings to
+# /dev/null.
+#
+function check_status
+{
+	local rv=0
+
+	#
+	# There are many other SMF service states, but most of them are either
+	# highly transient or require a human to figure out what's going on
+	# anyway, so we just bail out if we see anything other than the normal
+	# steady-state states here.
+	#
+	case "$m_minnow_status" in
+	online)		;;
+	disabled)	;;
+	*)
+		fail "unrecognized minnow status: \"$m_minnow_status\""
+		;;
+	esac
+
+	if [[ "$m_record_timestamp" == "$m_timestamp_disabled" &&
+	    "$m_minnow_status" != "disabled" ]]; then
+		warn "minnow is enabled, but moray record indicates disabled"
+		rv=1
+	fi
+
+	if [[ "$m_record_timestamp" != "$m_timestamp_disabled" &&
+	    "$m_minnow_status" != "online" ]]; then
+		warn "minnow is disabled, but moray record indicates enabled"
+		rv=1
+	fi
+	
+	return $rv
+}
+
+#
+# show_status: show the current write status.  This assumes that the status has
+# already been checked with check_status.
+#
+function show_status
+{
+	if [[ "$m_record_timestamp" != "$m_timestamp_disabled" ]]; then
+		echo "mako \"$m_mako_storid\": writes enabled"
+	else
+		echo "mako \"$m_mako_storid\": writes disabled"
+	fi
+}
+
+#
+# do_enable_writes: enable writes to this mako shard.  We do this by enabling
+# the minnow service and waiting for it to write a recent record.
+#
+function do_enable_writes
+{
+	local okay
+
+	if ! svcadm enable -s minnow; then
+		fail "failed to enable minnow"
+	fi
+
+	#
+	# Wait up to about 30 seconds for minnow to update the record.
+	#
+	for (( i = 0; i < 30; i++ )) {
+		load_status
+		if check_status > /dev/null 2>&1 &&
+		    [[ "$m_minnow_status" == "online" ]]; then
+			okay=true
+			break;
+		fi
+
+		echo -n ". "
+		sleep 1
+	}
+
+	if [[ $okay != "true" ]]; then
+		fail "timed out waiting for record to be updated"
+	fi
+
+	m_show_warning=true
+}
+
+#
+# do_disable_writes: disable writes to this mako shard.  We do this by disabling
+# the minnow service and then writing an ancient record.
+#
+function do_disable_writes
+{
+	if ! svcadm disable -s minnow; then
+		fail "failed to disable minnow"
+	fi
+
+	#
+	# Load the status again so that we have the latest record.
+	#
+	load_status
+	if ! json -e "this.value.timestamp = $m_timestamp_disabled" value \
+	     < "$m_record_file" > "$m_record_file_new" ||
+	   ! putobject -h "$m_moray_host" -p "$m_moray_port" \
+	     -d "$(cat $m_record_file_new)" "$m_moray_bucket" \
+	     "$m_record_key"; then
+		fail "failed to write updated record"
+	fi
+
+	warn "disabled minnow and wrote updated record"
+
+	cat >&2 <<-EOF
+	NOTE: This change will not persist if this mako zone is upgraded.
+	EOF
+
+	#
+	# Load the status again for printing it out properly.
+	#
+	load_status
+	m_show_warning=true
+}
+
+#
+# fini: clean up temporary files
+#
+function fini
+{
+	rm -f "$m_record_file" "$m_record_file_new"
+}
+
+function main
+{
+	[[ -n "$1" ]] || usage "no command specified"
+
+	init_prereqs
+	init_config
+
+	trap fini EXIT
+	load_status
+	check_status
+
+	case "$1" in
+	enable-writes)
+	    do_enable_writes
+	    ;;
+	disable-writes)
+	    do_disable_writes
+	    ;;
+	show)
+	    ;;
+	*)
+	    usage "unsupported command: \"$1\""
+	    ;;
+	esac
+
+	show_status
+	if [[ "$m_show_warning" == "true" ]]; then
+		cat <<-EOF
+		NOTE: You may want to restart all muskie (webapi) instances
+		in order to pick up this change immediately.
+		EOF
+	fi
+}
+
+main "$@"

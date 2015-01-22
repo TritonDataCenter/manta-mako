@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2015, Joyent, Inc.
 #
 
 #
@@ -32,6 +32,7 @@ NPM		:= npm
 # Files
 #
 DOC_FILES	=
+BASH_FILES	= bin/manta-mako-adm
 JS_FILES	:= $(shell find lib test bin -name '*.js')
 JSL_CONF_NODE	= tools/jsl.node.conf
 JSL_FILES_NODE	= $(JS_FILES)
