@@ -1,7 +1,7 @@
 {
         "name": "mako",
         "description": "Storage backend for Manta",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "author": "Joyent (joyent.com)",
         "license": "MPL-2.0",
         "private": true,
@@ -18,6 +18,9 @@
                 "async": "0.1.x",
                 "tap": "0.4.0",
                 "node-uuid": "1.4.0"
+        },
+        "sdcDependencies": {
+                "config-agent": ">=1.2.0"
         },
         "engines": {
                 "node": "0.8.18"
