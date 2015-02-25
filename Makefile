@@ -25,6 +25,7 @@
 #
 # Tools
 #
+BASHSTYLE	 = $(NODE) tools/bashstyle
 TAP		:= ./node_modules/.bin/tap
 NPM		:= npm
 
@@ -74,12 +75,14 @@ NPM_ENV          = MAKE_OVERRIDES="CTFCONVERT=/bin/true CTFMERGE=/bin/true"
 # Repo-specific targets
 #
 .PHONY: all
-all: $(NGINX_EXEC) $(TAP) $(REPO_DEPS) scripts
+all: $(NODE_EXEC) $(NGINX_EXEC) $(TAP) $(REPO_DEPS) scripts
 	$(NPM) install
 $(TAP): | $(NPM_EXEC)
 	$(NPM) install
 
 CLEAN_FILES += $(TAP) ./node_modules/tap
+
+check-bash: $(NODE_EXEC)
 
 .PHONY: test
 test: $(TAP)

@@ -34,15 +34,17 @@ export PATH=$MINNOW_PATH/build/node/bin:$MINNOW_PATH/node_modules/.bin:/opt/loca
 
 
 function manta_update_compute_id {
-    local SERVER_UUID=$(mdata-get sdc:server_uuid)
+    local SERVER_UUID TMP_FILE ZONE_UUID CURL_EXIT MANTA_COMPUTE_ID update
+
+    SERVER_UUID=$(mdata-get sdc:server_uuid)
     [[ $? -eq 0 ]] || fatal "Unable to retrieve server_uuid"
 
-    local TMP_FILE=/var/tmp/manta_update_compute_id.$$
-    local ZONE_UUID=$(zonename)
+    TMP_FILE=/var/tmp/manta_update_compute_id.$$
+    ZONE_UUID=$(zonename)
 
     # See MANTA-1981... a loop here is a work around for an un-root-caused
     # failure case.
-    local CURL_EXIT=1
+    CURL_EXIT=1
     for i in {1..60}; do
         curl -s ${SAPI_URL}/configs/$(zonename) 2>&1 > ${TMP_FILE}
         CURL_EXIT=$?
@@ -54,10 +56,10 @@ function manta_update_compute_id {
     done
     [[ $CURL_EXIT -eq 0 ]] || fatal "unable to fetch config from sapi, exit code $CURL_EXIT"
 
-    local MANTA_COMPUTE_ID=$(json -f ${TMP_FILE} metadata.SERVER_COMPUTE_ID_MAPPING.${SERVER_UUID})
+    MANTA_COMPUTE_ID=$(json -f ${TMP_FILE} metadata.SERVER_COMPUTE_ID_MAPPING.${SERVER_UUID})
     [[ $? -eq 0 ]] || fatal "Unable to retrieve manta_compute_id"
 
-    local update=/opt/smartdc/config-agent/bin/mdata-update
+    update=/opt/smartdc/config-agent/bin/mdata-update
     ${update} MANTA_COMPUTE_ID $MANTA_COMPUTE_ID
     [[ $? -eq 0 ]] || fatal "Unable to update manta_compute_id"
 
@@ -67,8 +69,11 @@ function manta_update_compute_id {
 
 
 function manta_setup_minnow {
-    local storage_moray_shard=$(json -f ${METADATA} STORAGE_MORAY_SHARD)
-    [[ $? -eq 0 ]] || fatal "Unable to retrieve storage_moray_shard"
+    local storage_moray_shard
+
+    storage_moray_shard=$(json -f ${METADATA} STORAGE_MORAY_SHARD)
+    [[ -n "$storage_moray_shard" ]] || \
+        fatal "Unable to retrieve storage_moray_shard"
 
     manta_ensure_moray "$storage_moray_shard"
 
