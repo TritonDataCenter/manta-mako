@@ -2,7 +2,7 @@
 	"registration": {
 		"domain": "{{SERVICE_NAME}}",
 		"type": "host",
-		"ttl": 60,
+		"ttl": {{#REGISTRAR_TTL}}{{REGISTRAR_TTL}}{{/REGISTRAR_TTL}}{{^REGISTRAR_TTL}}1800{{/REGISTRAR_TTL}},
 		"aliases": [
 			"{{MANTA_STORAGE_ID}}"
 		]
