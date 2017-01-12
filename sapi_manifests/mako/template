@@ -14,14 +14,25 @@ http {
 	client_max_body_size 0;
 	default_type	application/octet-stream;
 	include		mime.types;
-	keepalive_timeout 2147483647;
-	keepalive_requests 2147483647;
+
+	{{!
+	  Due to MANTA-3084, we must continue to default to HTTP keepalives
+	  being disabled indefinitely (as older muskies will leak sockets
+	  rapidly and cease functioning if we allow them to use keep-alive).
+	  Once a particular Manta installation has upgraded all of both its
+	  muskies and makos, it can set this tweakable to a reasonable value
+	  (86400 suggested) to enable it. New installs post-MANTA-3084 should
+	  set this during setup.
+	}}
+	keepalive_timeout {{#MAKO_HTTP_KEEPALIVE_TIMEOUT}}{{MAKO_HTTP_KEEPALIVE_TIMEOUT}}{{/MAKO_HTTP_KEEPALIVE_TIMEOUT}}{{^MAKO_HTTP_KEEPALIVE_TIMEOUT}}0{{/MAKO_HTTP_KEEPALIVE_TIMEOUT}};
+	keepalive_requests {{#MAKO_HTTP_KEEPALIVE_TIMEOUT}}1000000{{/MAKO_HTTP_KEEPALIVE_TIMEOUT}}{{^MAKO_HTTP_KEEPALIVE_TIMEOUT}}0{{/MAKO_HTTP_KEEPALIVE_TIMEOUT}};
+
 	sendfile 	on;
 	send_timeout	300s;
 
 	server {
 		autoindex 	on;
-		listen		80;
+		listen		80 so_keepalive=10s:30s:10;
 		root		/manta;
 		server_name	localhost;
 
