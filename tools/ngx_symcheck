@@ -1,0 +1,67 @@
+#!/bin/bash
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+
+#
+# Copyright (c) 2017, Joyent, Inc.
+#
+
+#
+# This file checks the generated nginx symbol to ensure that we don't
+# see certain symbols and we do see others. This is mainly to ensure
+# that we have properly built a LFS-aware program.
+#
+
+PRESENT_SYMS="fstat64 open64 pread64 pwrite64"
+MISSING_SYMS="preadv pwritev preadv64 pwritev64 pread pwrite open fstat"
+NWRONG=
+
+function warn
+{
+        local msg="$*"
+        echo "$msg" >&2
+}
+
+function fatal
+{
+        local msg="$*"
+        [[ -z "$msg" ]] && msg="failed"
+        echo "$msg" >&2
+        exit 1
+}
+
+function check_one
+{
+	local bin sym exp
+	bin=$1
+	sym=$2
+	exp=$3
+
+	/usr/bin/nm -P $bin | awk \
+	    "{ if (\$1 == \"$sym\") { seen = 1 } } END{ exit (seen != 1) }"
+	if [[ $? -ne $exp ]]; then
+		echo -n "failed on checking $sym: " >&2
+		if [[ $exp -eq 0 ]]; then
+			echo "symbol missing, but expected it to be present"
+		else
+			echo "symbol present, but expected it to be missing"
+		fi
+		((NWRONG++))
+	fi
+}
+
+[[ $# -ne 1 ]] && fatal "ngx_symcheck: <binary>"
+[[ ! -f $1 ]] && fatal "cannot find file: $1"
+
+for s in $PRESENT_SYMS; do
+	check_one $1 $s 0
+done
+
+for s in $MISSING_SYMS; do
+	check_one $1 $s 1
+done
+
+[[ "$NWRONG" -eq 0 ]]

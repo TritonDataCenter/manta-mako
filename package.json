@@ -12,12 +12,15 @@
                 "manta": "2.0.7",
                 "moray": "git+https://github.com/joyent/node-moray.git#fd5781bc25a9bfe2ba82167664639753fb9f0ca5",
                 "posix-getopt": "1.0.0",
-                "vasync": "1.3.3"
+                "vasync": "1.6.4"
         },
         "devDependencies": {
                 "async": "0.1.x",
                 "tap": "0.4.0",
-                "node-uuid": "1.4.0"
+                "tape": "4.6.3",
+                "node-uuid": "1.4.0",
+                "extsprintf": "1.3.0",
+                "jsprim": "1.3.1"
         },
         "sdcDependencies": {
                 "config-agent": ">=1.2.0"

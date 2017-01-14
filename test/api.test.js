@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2017 Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 /* Test the Mako API endpoints */
@@ -18,6 +18,8 @@ var fs = require('fs');
 var http = require('http');
 var path = require('path');
 var uuid = require('node-uuid');
+var extsprintf = require('extsprintf');
+var sprintf = extsprintf.sprintf;
 
 var TEST_DIR = '/var/tmp/test.mako.' + process.pid;
 var filename = uuid.v4();
@@ -68,6 +70,23 @@ var getNonexistentObject = function (t) {
 };
 
 test('setup', function (t) {
+        var port;
+        if (process.env['MAKO_HOST']) {
+                options.host = process.env['MAKO_HOST'];
+        }
+
+        if (process.env['MAKO_PORT']) {
+                port = parseInt(process.env['MAKO_PORT'], 10);
+                if (isNaN(port)) {
+                        process.stderr.write(sprintf('failed to parse port: ' +
+                            '%d: using default: %d\n', process.env['MAKO_PORT'],
+                            options.port));
+                } else {
+                        options.port = port;
+                }
+        }
+
+
         fs.mkdirSync(TEST_DIR);
         createFile(file, 10 * 1024 * 1024, function () {
                 t.end();

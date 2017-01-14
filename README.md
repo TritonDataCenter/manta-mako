@@ -5,7 +5,7 @@
 -->
 
 <!--
-    Copyright (c) 2017 Joyent, Inc.
+    Copyright (c) 2017, Joyent, Inc.
 -->
 
 # manta-mako
@@ -39,24 +39,34 @@ to/from disk.
 
 # Working with the nginx git submodule
 
-To update nginx, first checkout out and make changes to the mako branch of the
-github Joyent nginx fork located at https://github.com/joyent/nginx/tree/mako
+mako uses [Joyent's fork of nginx](https://github.com/joyent/nginx)
+which has been modified to support some additional features:
 
-Once your changes have been committed to that repo, grab the git SHA for your
-changes and:
+* Calculates the md5 checksum of the streamed body and reports it.
+* Ensures that all renames are atomic in the filesystem (proper use of
+  fsync(2)).
+* Adds support for the multipart upload commit operation.
 
-    $ git clone git@github.com:joyent/manta-mako.git
-    $ cd mako/
-    $ git submodule init
-    $ git submodule update
-    $ cd deps/nginx/
-    $ git checkout -b mako
-    $ git checkout [Latest joyent/nginx#mako git SHA]
-    $ cd ../..
-    $ git add deps/nginx
-    $ git diff --cached #to check the submodule git SHA
+To understand how the nginx repository is managed and how we cut
+releases for use in mako, please read the
+[README](https://github.com/joyent/nginx).  When updating the nginx
+submodule in mako, the first step is to identify the release tag that
+you should use. Once that's been identified, you can update the
+submodule using something like the following flow:
 
-Then you can commit and push like any other change.
+```
+$ git clone git@github.com:joyent/manta-mako.git
+$ cd mako/
+$ git submodule init
+$ git submodule update
+$ cd deps/nginx/
+$ git checkout <tag>
+$ cd ../..
+$ git add deps/nginx
+$ git diff --cached #to check the submodule git SHA
+```
+
+Then you can commit, test, and push like any other change.
 
 ## Testing
 
@@ -69,7 +79,13 @@ use pfexec as the primary administrator):
 2. `mkdir /manta`
 3. `chmod 770 /manta`
 4. `chown nobody:staff /manta`
-5. Manually start nginx, by running `build/nginx/objs/nginx`
+5. Manually start nginx, by running `build/nginx/sbin/nginx`
 6. Run the test suite by running `gmake test`
 7. When finished, kill the nginx processes with something like `pkill -9 nginx`
-7. When finished, clean out any left over temporary data via `rm -rf /manta/*`
+8. When finished, clean out any left over temporary data via `rm -rf /manta/*`
+
+Note, that the tests default to looking for nginx on
+`http://localhost:80/`. This can be overriden by setting the `MAKO_HOST`
+and `MAKO_PORT` environment variables. For example if you set
+`MAKO_PORT=8080` and `MAKO_HOST=1.2.3.4`, we would instead look for a
+server at `http://1.2.3.4:8080/`.

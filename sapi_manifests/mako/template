@@ -1,9 +1,23 @@
+{{#MAKO_WORKER_PROCESSES}}
+worker_processes {{MAKO_WORKER_PROCESSES}};
+{{/MAKO_WORKER_PROCESSES}}
+{{^MAKO_WORKER_PROCESSES}}
 worker_processes  8;
+{{/MAKO_WORKER_PROCESSES}}
+
+{{#MAKO_THREAD_POOL_SIZE}}
+thread_pool mpu threads={{MAKO_THREAD_POOL_SIZE}};
+{{/MAKO_THREAD_POOL_SIZE}}
+{{^MAKO_THREAD_POOL_SIZE}}
+thread_pool mpu threads=8;
+{{/MAKO_THREAD_POOL_SIZE}}
+
 
 error_log /var/log/mako-error.log info;
 
 events {
 	worker_connections  1024;
+	use eventport;
 }
 
 http {
@@ -52,6 +66,24 @@ http {
 			fsync			on;
 			put_always_respond_md5	on;
 			content_md5_fail_status	469;
+		}
+
+		location /mpu/v1/commit
+		{
+			client_body_temp_path	/manta/nginx_temp;
+			mpu_enabled		on;
+			mpu_pool		mpu;
+			mpu_root		/manta;
+			#
+			# Because we currently allow for up to 10k parts
+			# in an MPU and each part is nominally a UUID,
+			# so 36 bytes of string or so, that quickly gets
+			# to around 360k. By the time you add all the
+			# other characters, that gets us pretty close to
+			# a 512k upper bound. However, we still end up
+			# opting to limit it.
+			#
+			client_max_body_size 	512K;
 		}
 
 		error_page 500 502 503 504 /50x.html;

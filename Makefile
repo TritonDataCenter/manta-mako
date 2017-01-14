@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2015, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 #
@@ -26,14 +26,15 @@
 # Tools
 #
 BASHSTYLE	 = $(NODE) tools/bashstyle
-TAP		:= ./node_modules/.bin/tap
+TAPE		:= ./node_modules/.bin/tape
 NPM		:= npm
+NGXSYMCHECK	= tools/ngx_symcheck
 
 #
 # Files
 #
 DOC_FILES	=
-BASH_FILES	= bin/manta-mako-adm
+BASH_FILES	= bin/manta-mako-adm $(NGXSYMCHECK)
 JS_FILES	:= $(shell find lib test bin -name '*.js')
 JSL_CONF_NODE	= tools/jsl.node.conf
 JSL_FILES_NODE	= $(JS_FILES)
@@ -75,26 +76,45 @@ NPM_ENV          = MAKE_OVERRIDES="CTFCONVERT=/bin/true CTFMERGE=/bin/true"
 # Repo-specific targets
 #
 .PHONY: all
-all: $(NODE_EXEC) $(NGINX_EXEC) $(TAP) $(REPO_DEPS) scripts
+all: $(NODE_EXEC) $(NGINX_EXEC) $(TAPE) $(REPO_DEPS) scripts
 	$(NPM) install
-$(TAP): | $(NPM_EXEC)
+$(TAPE): | $(NPM_EXEC)
 	$(NPM) install
 
-CLEAN_FILES += $(TAP) ./node_modules/tap
+CLEAN_FILES += $(TAPE) ./node_modules/ build
 
 check-bash: $(NODE_EXEC)
 
 .PHONY: test
-test: $(TAP)
-	TAP=1 $(TAP) test/*.test.js
+test: $(TAPE)
+	@for f in test/*.test.js; do	\
+		echo "# $$f";	\
+		$(TAPE) $$f || exit 1; \
+	done
 
 .PHONY: scripts
 scripts: deps/manta-scripts/.git
 	mkdir -p $(BUILD)/scripts
 	cp deps/manta-scripts/*.sh $(BUILD)/scripts
 
+.PHONY: check-nginx
+check-nginx: $(NGINX_EXEC)
+	$(NGXSYMCHECK) $(NGINX_EXEC)
+prepush: check-nginx
+
+#
+# The eng.git makefiles define the clean target using a :: rule. This
+# means that we're allowed to have multiple bodies that define the rule
+# and they should all take effect. We ignore the return value from the
+# recursive make clean because there is no guarantee that there's a
+# generated Makefile or that the nginx submodule has been initialized
+# and checked out.
+#
+clean::
+	-(cd deps/nginx && $(MAKE) clean)
+
 .PHONY: release
-release: all deps docs $(SMF_MANIFESTS)
+release: all deps docs $(SMF_MANIFESTS) check-nginx
 	@echo "Building $(RELEASE_TARBALL)"
 	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/mako
 	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/boot

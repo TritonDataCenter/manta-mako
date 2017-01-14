@@ -18,8 +18,14 @@
 # eng.git and then update your repo to use the new version.
 #
 
-$(NGINX_EXEC): | deps/nginx/.git
-	(cd deps/nginx; ./auto/configure $(NGINX_CONFIG_FLAGS) && $(MAKE) && $(MAKE) install)
+deps/nginx/auto/configure: | deps/nginx/.git
+
+deps/nginx/Makefile: deps/nginx/auto/configure
+	cd deps/nginx && ./auto/configure $(NGINX_CONFIG_FLAGS)
+
+.PHONY: $(NGINX_EXEC)
+$(NGINX_EXEC): | deps/nginx/Makefile
+	(cd deps/nginx && $(MAKE) && $(MAKE) install)
 	cp $(ROOT)/sapi_manifests/mako/template $(NGINX_INSTALL)/conf/nginx.conf
 
 

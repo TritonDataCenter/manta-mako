@@ -6,63 +6,11 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright 2017, Joyent, Inc.
 #
 
 #
-# Makefile.nginx.defs: Makefile for building and bundling your own Node.js.
-#
-# NOTE: This makefile comes from the "eng" repo. It's designed to be dropped
-# into other repos as-is without requiring any modifications. If you find
-# yourself changing this file, you should instead update the original copy in
-# eng.git and then update your repo to use the new version.
-#
-
-#
-# This Makefile facilitates building and bundling your own copy of Node.js in
-# your repo.  All it does is define variables for nginx, nginx-waf, and npm for
-# you to use elsewhere in your Makefile and rules to build these tools when
-# needed.
-#
-# To use this facility, include "Makefile.nginx.defs", use the variables as
-# described below to define targets, and then include "Makefile.nginx.targ".
-#
-# There are two use cases addressed here:
-#
-# (1) Invoking nginx, nginx-waf, or npm as part of the build process, as in "npm
-#     install" and "nginx-waf configure build".  To facilitate this, this
-#     Makefile defines Make variables NGINX, NGINX_WAF, and NPM that you can use
-#     to invoke these commands during the build process.  You MUST NOT assume
-#     that these variables just evaluate to the filenames themselves, as they
-#     may have environment variable definitions and other things that prevent
-#     you from using them directly as a filename.  If you want that, see (2).
-#
-#     Wherever you use one of these variables, you MUST include a dependency on
-#     the corresponding *_EXEC variable as well, like so:
-#
-#	nginx_modules/restify: deps/restify $(NPM_EXEC)
-#		$(NPM) install deps/restify
-#
-#     or better, use an order-only dependency to avoid spurious rebuilds:
-#
-#	nginx_modules/restify: deps/restify | $(NPM_EXEC)
-#		$(NPM) install deps/restify
-#
-#     Otherwise, the underlying file will not get built.  We don't
-#     automatically build them as part of "all" because that approach is
-#     brittle.
-#
-# When including this Makefile, you MAY also specify:
-#
-#	BUILD			top-level directory for built binaries
-#				(default: "build")
-#
-#	NGINX_INSTALL		where nginx should install its built items
-#				(default: "$BUILD/nginx")
-#
-#	NGINX_CONFIG_FLAGS	extra flags to pass to Nginx's "configure"
-#				(default: --prefix directive and
-#				 --with-http_dav_module)
+# Makefile.nginx.defs: Makefile for building nginx
 #
 
 TOP ?= $(error You must include Makefile.defs before this makefile)
@@ -75,10 +23,12 @@ NGINX_CONFIG_FLAGS += \
 	--prefix=$(TOP)/$(NGINX_INSTALL) \
 	--with-http_dav_module \
 	--with-http_stub_status_module \
-	--with-cc-opt="-I/opt/local/include" \
-	--with-ld-opt="-L/opt/local/lib -R/opt/local/lib"
+	--with-threads \
+	--with-http_mpu_commit \
+	--with-cc-opt="-std=gnu99 -I/opt/local/include" \
+	--with-ld-opt="-L/opt/local/lib -R/opt/local/lib -lumem"
 
-NGINX_EXEC	= $(NGINX_INSTALL)/bin/nginx
+NGINX_EXEC	= $(NGINX_INSTALL)/sbin/nginx
 
 # Ensure these use absolute paths to the executables to allow running
 # from a dir other than the project top.
