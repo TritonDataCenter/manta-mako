@@ -54,6 +54,7 @@ var getNonexistentObject = function (t) {
         var req = http.request(options, function (res) {
                 console.log('STATUS: ' + res.statusCode);
                 console.log('HEADERS: ' + JSON.stringify(res.headers));
+                res.resume();
                 t.equal(res.statusCode, 404);
                 t.end();
         });
@@ -84,6 +85,7 @@ test('put 10 MiB object', function (t) {
         var req = http.request(options, function (res) {
                 console.log('STATUS: ' + res.statusCode);
                 console.log('HEADERS: ' + JSON.stringify(res.headers));
+                res.resume();
                 t.equal(res.statusCode, 201);
                 t.end();
         });
@@ -155,6 +157,7 @@ test('100s of small files', function (t) {
 
                         var req = http.request(options,
                             function (res) {
+                                res.resume();
                                 t.equal(res.statusCode, 201);
                                 return (subcb(null));
                         });
