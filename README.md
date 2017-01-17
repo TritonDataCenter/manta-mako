@@ -5,7 +5,7 @@
 -->
 
 <!--
-    Copyright (c) 2014, Joyent, Inc.
+    Copyright (c) 2017 Joyent, Inc.
 -->
 
 # manta-mako
@@ -57,3 +57,19 @@ changes and:
     $ git diff --cached #to check the submodule git SHA
 
 Then you can commit and push like any other change.
+
+## Testing
+
+To run the mako test suite, you need to be able to run nginx in your
+zone. The following should be run as a root user (or by a user who can
+use pfexec as the primary administrator):
+
+1. `gmake release`
+2. Manually edit `build/nginx/conf/nginx.conf` to clean up the sapi manifest
+2. `mkdir /manta`
+3. `chmod 770 /manta`
+4. `chown nobody:staff /manta`
+5. Manually start nginx, by running `build/nginx/objs/nginx`
+6. Run the test suite by running `gmake test`
+7. When finished, kill the nginx processes with something like `pkill -9 nginx`
+7. When finished, clean out any left over temporary data via `rm -rf /manta/*`

@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2014, Joyent, Inc.
+ * Copyright 2017 Joyent, Inc.
  */
 
 /* Test the Mako API endpoints */
@@ -66,22 +66,6 @@ var getNonexistentObject = function (t) {
         });
 };
 
-var getObjectCount = function (callback) {
-        options.method = 'HEAD';
-        options.path = '/';
-
-        var req = http.request(options, function (res) {
-                var count = parseInt(res.headers['x-mako-object-count'], 10);
-                return (callback(null, count));
-        });
-        req.end();
-
-        req.on('error', function (err) {
-                console.log('problem with request: ' + err.message);
-                return (callback(err));
-        });
-};
-
 test('setup', function (t) {
         fs.mkdirSync(TEST_DIR);
         createFile(file, 10 * 1024 * 1024, function () {
@@ -101,29 +85,6 @@ test('put 10 MiB object', function (t) {
                 console.log('STATUS: ' + res.statusCode);
                 console.log('HEADERS: ' + JSON.stringify(res.headers));
                 t.equal(res.statusCode, 201);
-                t.end();
-        });
-
-        req.on('error', function (err) {
-                console.log('problem with request: ' + err.message);
-                t.ok(false, err.message);
-                t.end();
-        });
-
-        fs.readFile(file, function (err, contents) {
-                req.write(contents);
-                req.end();
-        });
-});
-
-test('put existing object', function (t) {
-        options.method = 'PUT';
-        options.path = '/' + filename;
-
-        var req = http.request(options, function (res) {
-                console.log('STATUS: ' + res.statusCode);
-                console.log('HEADERS: ' + JSON.stringify(res.headers));
-                t.equal(res.statusCode, 405);
                 t.end();
         });
 
@@ -168,107 +129,53 @@ test('get 10 MiB object', function (t) {
         });
 });
 
-test('delete 10 MiB object', function (t) {
-        options.method = 'DELETE';
-        options.path = '/' + filename;
-
-        var req = http.request(options, function (res) {
-                console.log('STATUS: ' + res.statusCode);
-                console.log('HEADERS: ' + JSON.stringify(res.headers));
-
-                t.equal(res.statusCode, 204);
-
-                options.method = 'GET';
-
-                getNonexistentObject(t);
-        });
-        req.end();
-
-        req.on('error', function (err) {
-                console.log('problem with request: ' + err.message);
-                t.ok(false, err.message);
-                t.end();
-        });
-});
-
-test('object no longer exists after delete', function (t) {
-        getNonexistentObject(t);
-});
-
-test('HEAD / reports number of objects', function (t) {
-        options.method = 'HEAD';
-        options.path = '/';
-
-        var req = http.request(options, function (res) {
-                console.log('STATUS: ' + res.statusCode);
-                console.log('HEADERS: ' + JSON.stringify(res.headers));
-
-                var count = parseInt(res.headers['x-mako-object-count'], 10);
-                t.ok(count !== NaN);
-                t.type(count, 'number', 'HEAD / returns a number');
-                t.end();
-        });
-        req.end();
-
-        req.on('error', function (err) {
-                console.log('problem with request: ' + err.message);
-                t.ok(false, err.message);
-                t.end();
-        });
-});
-
 test('100s of small files', function (t) {
-        getObjectCount(function (err, count) {
-                var files = [];
-                for (var ii = 0; ii < 200; ii++)
-                        files.push(uuid.v4());
+        var files = [];
+        for (var ii = 0; ii < 200; ii++)
+                files.push(uuid.v4());
 
-                async.series([ function (callback) {
-                        async.forEach(files, function (f, subcb) {
-                                createFile(path.join(TEST_DIR, f),
-                                    131072 * 10, function (suberr) {
-                                        return (subcb(suberr));
-                                });
-                        }, function (suberr) {
-                                if (suberr) {
-                                        t.ok(false, suberr.message);
-                                        t.end();
-                                        return (callback(suberr));
-                                }
-                                return (callback(null));
+        async.series([ function (callback) {
+                async.forEach(files, function (f, subcb) {
+                        createFile(path.join(TEST_DIR, f),
+                            131072 * 10, function (suberr) {
+                                return (subcb(suberr));
                         });
-                }, function (callback) {
-                        async.forEach(files, function (f, subcb) {
-                                options.method = 'PUT';
-                                options.path = '/' + f;
+                }, function (suberr) {
+                        if (suberr) {
+                                t.ok(false, suberr.message);
+                                t.end();
+                                return (callback(suberr));
+                        }
+                        return (callback(null));
+                });
+        }, function (callback) {
+                async.forEach(files, function (f, subcb) {
+                        options.method = 'PUT';
+                        options.path = '/' + f;
 
-                                var req = http.request(options,
-                                    function (res) {
-                                        t.equal(res.statusCode, 201);
-                                        return (subcb(null));
-                                });
-
-                                req.on('error', function (suberr) {
-                                        console.log('problem with request: ' +
-                                            suberr.message);
-                                        t.ok(false, suberr.message);
-                                        t.end();
-                                });
-
-                                fs.readFile(path.join(TEST_DIR, f),
-                                    function (suberr, contents) {
-                                        req.write(contents);
-                                        req.end();
-                                });
-                        }, function (suberr) {
-                                return (callback(null));
+                        var req = http.request(options,
+                            function (res) {
+                                t.equal(res.statusCode, 201);
+                                return (subcb(null));
                         });
-                }], function (suberr, results) {
-                        getObjectCount(function (subsuberr, newCount) {
-                                t.ok(count + 200 === newCount);
+
+                        req.on('error', function (suberr) {
+                                console.log('problem with request: ' +
+                                    suberr.message);
+                                t.ok(false, suberr.message);
                                 t.end();
                         });
+
+                        fs.readFile(path.join(TEST_DIR, f),
+                            function (suberr, contents) {
+                                req.write(contents);
+                                req.end();
+                        });
+                }, function (suberr) {
+                        return (callback(null));
                 });
+        }], function (suberr, results) {
+                t.end();
         });
 });
 
