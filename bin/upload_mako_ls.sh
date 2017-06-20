@@ -33,7 +33,7 @@ DIR_TYPE='application/json; type=directory'
 LOG_TYPE='application/x-bzip2'
 PID=$$
 PID_FILE=/tmp/upload_mako_ls.pid
-TMP_DIR=/tmp/mako_dir
+TMP_DIR=/var/tmp/mako_dir
 LISTING_FILE=$TMP_DIR/$MANTA_STORAGE_ID
 MANTA_DIR=/mako
 
