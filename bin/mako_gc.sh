@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 ###############################################################################
@@ -40,6 +40,7 @@ HOSTNAME=`hostname`
 LOG_TYPE='application/x-bzip2'
 MPATH=/manta_gc/mako/$MANTA_STORAGE_ID
 PID=$$
+SCRIPT=$(basename $0)
 TMP_DIR=/tmp/mako_gc
 PID_FILE=/tmp/mako_gc.pid
 TOMB_DATE=$(date "+%Y-%m-%d")
@@ -62,23 +63,41 @@ TOMB_CLEAN_COUNT=0
 
 ## Functions
 
+#
+# For logging purposes, we keep track of the current date stamp in a global
+# $LNOW variable.  To avoid calling date(1) whenever we wish to log, we only
+# update the date stamp if the $SECONDS variable (which, in bash(1) is the
+# integer number of seconds since the script was invoked) does not match our
+# cached value.  This means that it's possible for our date stamp to be
+# slightly out of date with respect to the system clock, but by less than one
+# second -- which we consider to be acceptable considering we only have
+# second resolution.
+#
+function updatelnow {
+    if [[ $SECONDS != $LASTLNOW ]]; then
+        LNOW=`date "+%Y-%m-%dT%H:%M:%S.000Z"`
+        LASTLNOW=$SECONDS
+    fi
+}
+
 function fatal {
-    local LNOW=`date "+%Y-%m-%dT%H:%M:%S.000Z"`
-    echo "$LNOW: $(basename $0) ($PID): fatal error: $*" >&2
+    updatelnow
+    echo "$LNOW: $SCRIPT ($PID): fatal error: $*" >&2
     audit
     exit 1
 }
 
 
 function log {
-    local LNOW=`date "+%Y-%m-%dT%H:%M:%S.000Z"`
-    echo "$LNOW: $(basename $0) ($PID): info: $*" >&2
+    updatelnow
+    echo "$LNOW: $SCRIPT ($PID): info: $*" >&2
 }
 
 
 # Since we use bunyan, this mimics a json structure.
 function audit {
-    local LNOW=`date "+%Y-%m-%dT%H:%M:%S.000Z"`
+    updatelnow
+
     echo "{\
 \"audit\":true,\
 \"name\":\"mako_gc\",\
@@ -98,7 +117,8 @@ function audit {
 
 
 function auditRow {
-    local LNOW=`date "+%Y-%m-%dT%H:%M:%S.000Z"`
+    updatelnow
+
     echo "{\
 \"audit\":true,\
 \"name\":\"mako_gc\",\
@@ -230,7 +250,8 @@ do
         fi
         log "Processing $LINE"
         #Fields 3 and 4 are the owner and object ids, respectively.
-        OBJECT=`echo "$LINE" | cut -f 3,4 | tr '\t' '/' | xargs -i echo /manta/{}`
+        ARR=($LINE)
+        OBJECT=/manta/${ARR[2]}/${ARR[3]}
         if [[ -f $OBJECT ]]
         then
             auditRow "false" "$OBJECT" "$TOMB_DIR"
