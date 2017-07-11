@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 ###############################################################################
@@ -36,6 +36,7 @@ PID_FILE=/tmp/upload_mako_ls.pid
 TMP_DIR=/var/tmp/mako_dir
 LISTING_FILE=$TMP_DIR/$MANTA_STORAGE_ID
 MANTA_DIR=/mako
+START_TIME=`date -u +"%Y-%m-%dT%H:%M:%SZ"` # Time that this script started.
 
 
 
@@ -89,6 +90,7 @@ function manta_put() {
         -H "Date: $NOW" \
         -H "Authorization: Signature $AUTHZ_HEADER,signature=\"$SIGNATURE\"" \
         -H "Connection: close" \
+        -H "m-mako-dump-time: $START_TIME" \
         $MANTA_URL/$MANTA_USER/stor$1 \
         -T $2 \
         || fatal "unable to put $1"
