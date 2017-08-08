@@ -22,8 +22,6 @@
 
 export PATH=/opt/local/bin:$PATH
 
-
-
 ## Global vars
 
 # Immutables
@@ -42,7 +40,7 @@ MPATH=/manta_gc/mako/$MANTA_STORAGE_ID
 PID=$$
 SCRIPT=$(basename $0)
 TMP_DIR=/tmp/mako_gc
-PID_FILE=/tmp/mako_gc.pid
+GC_LOCKFILE=/tmp/mako_gc_lock
 TOMB_DATE=$(date "+%Y-%m-%d")
 TOMB_ROOT=/manta/tombstone
 TOMB_DIR=$TOMB_ROOT/$TOMB_DATE
@@ -179,24 +177,74 @@ function manta_delete() {
         || fatal "unable to delete $1"
 }
 
+# Check to make sure we're the only one running
+# https://github.com/joyent/manta-scripts/blob/master/backup.sh#L74
+# $1 -> lockfile to create
+# $$ pid of this script
+# $1 -> lockfile to create
+# $$ pid of this script
+function create_lockfile() {
+    # Creating the tempfile can race, but
+    # ln(1) is atomic, so that's the true locking
+    # operation
+    TEMPFILE="$1.$$"
+    LOCKFILE="$1"
+    if ! echo $$ > $TEMPFILE 2>/dev/null; then
+        echo "Unable to write to directory: $(dirname $TEMPFILE)" >&2
+        return 1
+    fi
 
+    # Create lock, remove TEMPFILE
+    #
+    # Use ln(1) to move the temporary file into place because,
+    # unlike mv(1), it will fail if the destination existed
+    # already.
+    if /usr/bin/ln "$TEMPFILE" "$LOCKFILE" 2>/dev/null; then
+        /usr/bin/rm -f "$TEMPFILE"
+        trap 'rm -f "$LOCKFILE"' EXIT # schedule cleanup hook
+        return 0
+    fi
+
+    STALE_PID=$(< $LOCKFILE)
+    if [[ ! "$STALE_PID" -gt "0" ]]; then
+        /usr/bin/rm -f "$TEMPFILE"
+        return 1
+    fi
+
+    # Test if PID from lockfile is running
+    # If it is still running, the function will return here
+    if /usr/bin/kill -0 "$STALE_PID" 2>/dev/null; then
+        /usr/bin/rm -f "$TEMPFILE"
+        return 1
+    fi
+
+    # PID was stale, remove it, then attempt to create lockfile
+    # again
+    if /usr/bin/rm "$LOCKFILE" 2>/dev/null; then
+        echo "Removed stale lock file of process $STALE_PID"
+    fi
+
+    if /usr/bin/ln "$TEMPFILE" "$LOCKFILE" 2>/dev/null; then
+        /usr/bin/rm -f "$TEMPFILE"
+        trap 'rm -f "$LOCKFILE"' EXIT # schedule cleanup hook
+        return 0
+    fi
+
+    # Creating lockfile failed, cleanup and error out
+    /usr/bin/rm -f "$TEMPFILE"
+    return 1
+}
 
 ## Main
 
 : ${MANTA_STORAGE_ID:?"Manta storage id must be set."}
 
-# Check the last pid to see if a previous cron is still running...
-LAST_PID=$(cat $PID_FILE 2>/dev/null)
 
-if [[ -n "$LAST_PID" ]]; then
-    ps -p $LAST_PID >/dev/null
-    if [[ $? -eq 0 ]]; then
-        echo "$0 process still running.  Exiting..."
-        exit 1
-    fi
+# Do not run if this script is being run already
+if ! create_lockfile $GC_LOCKFILE; then
+    RPID=$(< $GC_LOCKFILE)
+    fatal "mako_gc is already running on pid: $RPID"
 fi
-
-echo -n $PID >$PID_FILE
 
 # Ok, we're good to start gc
 log "starting gc"
@@ -287,8 +335,5 @@ done
 
 ERROR="false"
 audit
-
-# Clean up the last pid file...
-rm $PID_FILE
 
 exit 0;
