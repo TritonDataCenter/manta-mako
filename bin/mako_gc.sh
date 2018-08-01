@@ -46,7 +46,7 @@ PID_FILE=/tmp/mako_gc.pid
 TOMB_DATE=$(date "+%Y-%m-%d")
 TOMB_ROOT=/manta/tombstone
 TOMB_DIR=$TOMB_ROOT/$TOMB_DATE
-TOMB_DIRS_TO_KEEP=21
+TOMB_DIRS_TO_KEEP=0
 
 
 # Mutables

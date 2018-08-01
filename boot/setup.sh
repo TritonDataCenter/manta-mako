@@ -142,7 +142,8 @@ function manta_setup_crons {
     #Before you change cron scheduling, please consult the Mola System "Crons"
     # Overview documentation (manta-mola.git/docs/system-crons)
 
-    echo '15 12 * * * /opt/smartdc/mako/bin/mako_gc.sh >>/var/log/mako-gc.log 2>&1' >>$crontab
+    # We use a more aggressive schedule for testing MANTA-3776 and MANTA-3694
+    echo '0 * * * * /opt/smartdc/mako/bin/mako_gc.sh >>/var/log/mako-gc.log 2>&1' >>$crontab
     echo '1 8 * * * /opt/smartdc/mako/bin/upload_mako_ls.sh >>/var/log/mako-ls-upload.log 2>&1' >>$crontab
 
     crontab $crontab
