@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2017, Joyent, Inc.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 #
@@ -58,6 +58,7 @@ else
 endif
 include ./tools/mk/Makefile.node_deps.defs
 include ./tools/mk/Makefile.nginx.defs
+include ./tools/mk/Makefile.ctf.defs
 
 #
 # MG Variables
@@ -72,6 +73,16 @@ RELSTAGEDIR          := /tmp/$(STAMP)
 # See marlin.git Makefile.
 #
 NPM_ENV          = MAKE_OVERRIDES="CTFCONVERT=/bin/true CTFMERGE=/bin/true"
+
+#
+# makofind specific defines
+#
+MAKOFIND_OBJS =		makofind.o
+MAKOFIND_CFLAGS =	-gdwarf-2 -m64 -std=c99 -D__EXTENSIONS__ \
+			-Wall -Wextra -Werror \
+			-Wno-unused-parameter \
+			-Isrc/
+MAKOFIND_OBJDIR =	$(CACHE_DIR)/makofind.obj
 
 #
 # Repo-specific targets
@@ -103,6 +114,18 @@ check-nginx: $(NGINX_EXEC)
 	$(NGXSYMCHECK) $(NGINX_EXEC)
 prepush: check-nginx
 
+makofind: $(MAKOFIND_OBJS:%=$(MAKOFIND_OBJDIR)/%) $(STAMP_CTF_TOOLS)
+	gcc -o $@ $(MAKOFIND_OBJS:%=$(MAKOFIND_OBJDIR)/%) $(MAKOFIND_CFLAGS)
+	$(CTFCONVERT) -l $@ $@
+
+CLEAN_FILES += $(MAKOFIND_OBJDIR) makofind
+
+$(MAKOFIND_OBJDIR)/%.o: src/%.c
+	@mkdir -p $(@D)
+	gcc -o $@ -c $(MAKOFIND_CFLAGS) $<
+
+CLEAN_FILES += $(MAKOFIND_OBJDIR) makofind
+
 #
 # The eng.git makefiles define the clean target using a :: rule. This
 # means that we're allowed to have multiple bodies that define the rule
@@ -115,7 +138,7 @@ clean::
 	-(cd deps/nginx && $(MAKE) clean)
 
 .PHONY: release
-release: all deps docs $(SMF_MANIFESTS) check-nginx
+release: all deps docs $(SMF_MANIFESTS) check-nginx makofind
 	@echo "Building $(RELEASE_TARBALL)"
 	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/mako
 	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/boot
@@ -131,6 +154,7 @@ release: all deps docs $(SMF_MANIFESTS) check-nginx
 	    $(ROOT)/smf \
 	    $(RELSTAGEDIR)/root/opt/smartdc/mako/
 	cp -r $(ROOT)/build/scripts $(RELSTAGEDIR)/root/opt/smartdc/mako/boot
+	cp $(ROOT)/makofind $(RELSTAGEDIR)/root/opt/smartdc/mako
 	ln -s /opt/smartdc/mako/boot/setup.sh \
 	    $(RELSTAGEDIR)/root/opt/smartdc/boot/setup.sh
 	chmod 755 $(RELSTAGEDIR)/root/opt/smartdc/mako/boot/setup.sh
@@ -156,3 +180,4 @@ endif
 include ./tools/mk/Makefile.node_deps.targ
 include ./tools/mk/Makefile.nginx.targ
 include ./tools/mk/Makefile.targ
+include ./tools/mk/Makefile.ctf.targ
