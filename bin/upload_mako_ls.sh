@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2017, Joyent, Inc.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 ###############################################################################
@@ -35,7 +35,11 @@ PID=$$
 PID_FILE=/tmp/upload_mako_ls.pid
 TMP_DIR=/var/tmp/mako_dir
 LISTING_FILE=$TMP_DIR/$MANTA_STORAGE_ID
+LISTING_FILE_PARTIAL=${LISTING_FILE}.${PID}
 MANTA_DIR=/mako
+MAKO_DIR=/opt/smartdc/mako
+MAKOFIND=$MAKO_DIR/makofind
+TARGET_DIR=/manta
 START_TIME=`date -u +"%Y-%m-%dT%H:%M:%SZ"` # Time that this script started.
 
 
@@ -119,13 +123,18 @@ log "starting directory listing upload"
 
 mkdir -p $TMP_DIR
 
-# %p is filename, %s is *logical* size in *bytes*, %T@ is last modified time,
-# %unix time, %k is the *physical* size in *kilobytes*
-find /manta -type f -printf '%p\t%s\t%T@\t%k\n' >$LISTING_FILE
+"$MAKOFIND" "$TARGET_DIR" > "$LISTING_FILE_PARTIAL"
+
+if [[ $? -ne 0 ]]; then
+	fatal "Error: makofind failed to obtain a complete listing"
+fi
+
+# Rename the file to reflect that makofind completed successfully
+mv "$LISTING_FILE_PARTIAL" "$LISTING_FILE"
 
 log "Going to upload $LISTING_FILE to $MANTA_DIR/$MANTA_STORAGE_ID"
-manta_put_directory $MANTA_DIR
-manta_put $MANTA_DIR/$MANTA_STORAGE_ID $LISTING_FILE
+manta_put_directory "$MANTA_DIR"
+manta_put "$MANTA_DIR/$MANTA_STORAGE_ID" "$LISTING_FILE"
 
 log "Cleaning up..."
 rm -rf $TMP_DIR
