@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2017, Joyent, Inc.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 ###############################################################################
@@ -27,6 +27,7 @@ export PATH=/opt/local/bin:$PATH
 [ -z $MANTA_URL ] && MANTA_URL=$(cat /opt/smartdc/mako/etc/gc_config.json | json -ga manta_url)
 [ -z $MANTA_USER ] && MANTA_USER=$(json -f /opt/smartdc/common/etc/config.json manta.user)
 [ -z $MANTA_STORAGE_ID ] && MANTA_STORAGE_ID=$(cat /opt/smartdc/mako/etc/gc_config.json | json -ga manta_storage_id)
+[ -z $MAKO_PROCESS_MANIFEST ] && MAKO_PROCESS_MANIFEST=$(cat /opt/smartdc/mako/etc/upload_config.json | json -ga process_manifest)
 
 AUTHZ_HEADER="keyId=\"/$MANTA_USER/keys/$MANTA_KEY_ID\",algorithm=\"rsa-sha256\""
 DIR_TYPE='application/json; type=directory'
@@ -35,7 +36,13 @@ PID=$$
 PID_FILE=/tmp/upload_mako_ls.pid
 TMP_DIR=/var/tmp/mako_dir
 LISTING_FILE=$TMP_DIR/$MANTA_STORAGE_ID
-MANTA_DIR=/mako
+LISTING_FILE_PARTIAL=${LISTING_FILE}.${PID}
+MANTA_DIR=mako
+SUMMARY_FILE="$TMP_DIR/${MANTA_STORAGE_ID}.summary"
+SUMMARY_DIR="$MANTA_DIR/summary"
+MAKO_DIR=/opt/smartdc/mako
+MAKOFIND=$MAKO_DIR/makofind
+TARGET_DIR=/manta
 START_TIME=`date -u +"%Y-%m-%dT%H:%M:%SZ"` # Time that this script started.
 
 
@@ -79,7 +86,7 @@ function manta_put_directory() {
         -H "Date: $NOW" \
         -H "Authorization: Signature $AUTHZ_HEADER,signature=\"$SIGNATURE\"" \
         -H "Connection: close" \
-        $MANTA_URL/$MANTA_USER/stor$1 2>&1
+        $MANTA_URL/$MANTA_USER/stor/${1} 2>&1
 }
 
 
@@ -91,12 +98,41 @@ function manta_put() {
         -H "Authorization: Signature $AUTHZ_HEADER,signature=\"$SIGNATURE\"" \
         -H "Connection: close" \
         -H "m-mako-dump-time: $START_TIME" \
-        $MANTA_URL/$MANTA_USER/stor$1 \
+        $MANTA_URL/$MANTA_USER/stor/${1} \
         -T $2 \
         || fatal "unable to put $1"
 }
 
+function process_manifest() {
+        file="$1"
 
+        cat $file | awk '{
+                split($1, x, "/")
+                acct=x[3]
+                bytes[acct] += $2
+                objects[acct]++
+                total_bytes += $2
+                total_objects++
+        } END {
+                printf("%-40s\t%-14s\t%-10s\t%-12s\n", "account", "bytes",
+                    "objects", "average size");
+
+                for (acct in bytes) {
+                        printf("%-40s\t%f\t%f\t%f\n",
+                            acct, bytes[acct], objects[acct],
+                            bytes[acct] / objects[acct]);
+                }
+                printf("totals %f %f %f\n", total_bytes, total_objects,
+                    total_bytes/total_objects);
+        }' > "$SUMMARY_FILE"
+
+        if [[ $? -ne 0 ]]; then
+                warn "Unable to completely process mako manifest file $file"
+                return 1
+        fi
+
+        return 0
+}
 
 ## Main
 
@@ -119,13 +155,25 @@ log "starting directory listing upload"
 
 mkdir -p $TMP_DIR
 
-# %p is filename, %s is *logical* size in *bytes*, %T@ is last modified time,
-# %unix time, %k is the *physical* size in *kilobytes*
-find /manta -type f -printf '%p\t%s\t%T@\t%k\n' >$LISTING_FILE
+"$MAKOFIND" "$TARGET_DIR" > "$LISTING_FILE_PARTIAL"
+
+if [[ $? -ne 0 ]]; then
+	fatal "Error: makofind failed to obtain a complete listing"
+fi
+
+# Rename the file to reflect that makofind completed successfully
+mv "$LISTING_FILE_PARTIAL" "$LISTING_FILE"
 
 log "Going to upload $LISTING_FILE to $MANTA_DIR/$MANTA_STORAGE_ID"
-manta_put_directory $MANTA_DIR
-manta_put $MANTA_DIR/$MANTA_STORAGE_ID $LISTING_FILE
+manta_put_directory "$MANTA_DIR"
+manta_put "$MANTA_DIR/$MANTA_STORAGE_ID" "$LISTING_FILE"
+
+if [[ $MAKO_PROCESS_MANIFEST -eq 1 ]]; then
+	log "Going to upload $SUMMARY_FILE to $SUMMARY_DIR/$MANTA_STORAGE_ID"
+	process_manifest "$LISTING_FILE"
+	manta_put_directory "$SUMMARY_DIR"
+	manta_put "$SUMMARY_DIR/$MANTA_STORAGE_ID" "$SUMMARY_FILE"
+fi
 
 log "Cleaning up..."
 rm -rf $TMP_DIR
