@@ -112,22 +112,8 @@ nftw_cb(const char *path, const struct stat *st, int objtype, struct FTW *ftw)
 	switch (objtype) {
 	case FTW_F:
 		logical = (st->st_blocks / 2) + (st->st_blocks % 2);
-<<<<<<< HEAD
 		if (printf("%s\t%ld\t%ld\t%ld\n", path, st->st_size,
 		    st->st_mtim.tv_sec, logical) < 0) {
-=======
-		/*
-		 * The intention of adding the trailing zero to the fractional
-		 * part of the timestamp is to match the GNU implementation when
-		 * printing the timestamp (with the fractional part) of when the
-		 * object was last modified.  GNU find leaves a trailing zero to
-		 * the nanoseconds part in an attempt to discourage people from
-		 * writing scripts which extract the fractional part of the
-		 * timestamp by using column offsets.
-		 */
-		if (printf("%s\t%ld\t%ld.%09ld0\t%ld\n", path, st->st_size,
-		    st->st_mtim.tv_sec, st->st_mtim.tv_nsec, logical) < 0) {
->>>>>>> b125d6750a94f5b22e44854d794d9b25dd5fb8f7
 			/*
 			 * If we fail to print even one line of the manifest, it
 			 * more or less renders the entire manifest inaccurate
