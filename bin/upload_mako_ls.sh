@@ -111,19 +111,23 @@ function process_manifest() {
 		acct=x[3]
 		bytes[acct] += $2
 		objects[acct]++
+		logical[acct] += $4
 		total_bytes += $2
 		total_objects++
+		total_logical += $4
 	} END {
-		printf("%-40s\t%-14s\t%-10s\t%-12s\n", "account", "bytes",
-		    "objects", "average size");
+		printf("%-40s\t%-20s\t%-20s\t%-20s\t%s\n", "account", "bytes",
+		    "objects", "average size", "logical");
 
 		for (acct in bytes) {
-			printf("%-40s\t%f\t%f\t%f\n",
+			printf("%-40s\t%-20f\t%-20f\t%-20f\t%f\n",
 			    acct, bytes[acct], objects[acct],
-			    bytes[acct] / objects[acct]);
+			    bytes[acct] / objects[acct], logical[acct]);
 		}
-		printf("totals %f %f %f\n", total_bytes, total_objects,
-		    total_bytes/total_objects);
+
+		printf("%-40s\t%-20f\t%-20f\t%-20f\t%f\n", "totals",
+		    total_bytes, total_objects, total_bytes/total_objects,
+		    total_logical);
 	}' > "$SUMMARY_FILE"
 
 	if [[ $? -ne 0 ]]; then
