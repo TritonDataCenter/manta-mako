@@ -107,31 +107,28 @@ function process_manifest() {
         file="$1"
 
         cat $file | awk '{
-                split($1, x, "/")
-                acct=x[3]
-                bytes[acct] += $2
-                objects[acct]++
-                total_bytes += $2
-                total_objects++
-        } END {
-                printf("%-40s\t%-14s\t%-10s\t%-12s\n", "account", "bytes",
-                    "objects", "average size");
+		split($1, x, "/")
+		acct=x[3]
+		bytes[acct] += $2
+		objects[acct]++
+		total_bytes += $2
+		total_objects++
+	} END {
+		printf("%-40s\t%-14s\t%-10s\t%-12s\n", "account", "bytes",
+		    "objects", "average size");
 
-                for (acct in bytes) {
-                        printf("%-40s\t%f\t%f\t%f\n",
-                            acct, bytes[acct], objects[acct],
-                            bytes[acct] / objects[acct]);
-                }
-                printf("totals %f %f %f\n", total_bytes, total_objects,
-                    total_bytes/total_objects);
-        }' > "$SUMMARY_FILE"
+		for (acct in bytes) {
+			printf("%-40s\t%f\t%f\t%f\n",
+			    acct, bytes[acct], objects[acct],
+			    bytes[acct] / objects[acct]);
+		}
+		printf("totals %f %f %f\n", total_bytes, total_objects,
+		    total_bytes/total_objects);
+	}' > "$SUMMARY_FILE"
 
-        if [[ $? -ne 0 ]]; then
-                warn "Unable to completely process mako manifest file $file"
-                return 1
-        fi
-
-        return 0
+	if [[ $? -ne 0 ]]; then
+		fatal "Unable to completely process mako manifest file $file"
+	fi
 }
 
 ## Main
