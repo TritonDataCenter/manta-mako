@@ -1,0 +1,5 @@
+{
+    "name": "upload",
+    "path": "/opt/smartdc/mako/etc/upload_config.json",
+    "master": true
+}

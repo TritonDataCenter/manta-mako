@@ -47,8 +47,8 @@ JSSTYLE_FLAGS	= -f tools/jsstyle.conf
 NAME			= mako
 NODE_PREBUILT_VERSION	= v0.10.48
 NODE_PREBUILT_TAG	= zone
-# sdc-minimal-multiarch-lts 15.4.1
-NODE_PREBUILT_IMAGE	= 18b094b0-eb01-11e5-80c1-175dac7ddf02
+# minimal-multiarch 18.1.0
+NODE_PREBUILT_IMAGE	= 1ad363ec-3b83-11e8-8521-2f68a4a34d5d
 
 include ./tools/mk/Makefile.defs
 ifeq ($(shell uname -s),SunOS)

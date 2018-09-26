@@ -5,7 +5,7 @@
 -->
 
 <!--
-    Copyright (c) 2017, Joyent, Inc.
+    Copyright (c) 2018, Joyent, Inc.
 -->
 
 # manta-mako
@@ -89,3 +89,14 @@ Note, that the tests default to looking for nginx on
 and `MAKO_PORT` environment variables. For example if you set
 `MAKO_PORT=8080` and `MAKO_HOST=1.2.3.4`, we would instead look for a
 server at `http://1.2.3.4:8080/`.
+
+## SAPI Tunables
+
+    MAKO_PROCESS_MANIFEST      Boolean value which when set, enables the post
+                               processing of a mako manifest to produce a
+                               summary as well.  The summary provides
+                               storage consumption details on a per-account
+                               basis along with a global total.  Both the full
+                               manifest and the summary are uploaded to
+                               /poseidon/stor/mako and
+                               /poseidon/stor/mako/summary respectively.
