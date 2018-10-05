@@ -45,7 +45,7 @@ JSSTYLE_FLAGS	= -f tools/jsstyle.conf
 # Variables
 #
 NAME			= mako
-NODE_PREBUILT_VERSION	= v6.14.4
+NODE_PREBUILT_VERSION	= v6.14.3
 NODE_PREBUILT_TAG	= zone
 # sdc-minimal-multiarch-lts 15.4.1
 NODE_PREBUILT_IMAGE	= 1ad363ec-3b83-11e8-8521-2f68a4a34d5d
