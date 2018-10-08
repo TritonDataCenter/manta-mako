@@ -19,6 +19,7 @@ fi
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 MANTA_ROOT=/manta
+MAKO_PATH=/opt/smartdc/mako
 MINNOW_PATH=/opt/smartdc/minnow
 MINNOW_CFG=${MINNOW_PATH}/etc/config.json
 NGINX_TEMP=${MANTA_ROOT}/nginx_temp
@@ -30,7 +31,7 @@ source ${DIR}/scripts/services.sh
 source ${DIR}/scripts/util.sh
 
 # No node in mako
-export PATH=$MINNOW_PATH/build/node/bin:$MINNOW_PATH/node_modules/.bin:/opt/local/bin:/usr/sbin:/usr/bin:$PATH
+export PATH=$MAKO_PATH/build/node/bin:$MAKO_PATH/node_modules/.bin:/opt/local/bin:/usr/sbin:/usr/bin:$PATH
 
 
 function manta_update_compute_id {
