@@ -23,12 +23,12 @@ export PATH=/opt/local/bin:$PATH
 # Immutables
 
 [ -z $SSH_KEY ] && SSH_KEY=/root/.ssh/id_rsa
-[ -z $MANTA_KEY_ID ] && MANTA_KEY_ID=$(ssh-keygen -l -f $SSH_KEY.pub | awk '{print $2}')
+[ -z $MANTA_KEY_ID ] && MANTA_KEY_ID=$(ssh-keygen -l -f $SSH_KEY.pub | gawk '{print $2}')
 [ -z $MANTA_URL ] && MANTA_URL=$(cat /opt/smartdc/mako/etc/gc_config.json | json -ga manta_url)
 [ -z $MANTA_USER ] && MANTA_USER=$(json -f /opt/smartdc/common/etc/config.json manta.user)
 [ -z $MANTA_STORAGE_ID ] && MANTA_STORAGE_ID=$(cat /opt/smartdc/mako/etc/gc_config.json | json -ga manta_storage_id)
-[ -z $MAKO_PROCESS_MANIFEST ] && MAKO_PROCESS_MANIFEST=$(cat /opt/smartdc/mako/etc/upload_config.json | json -ga process_manifest)
 
+MAKO_PROCESS_MANIFEST=$(cat /opt/smartdc/mako/etc/upload_config.json | json -ga process_manifest)
 AUTHZ_HEADER="keyId=\"/$MANTA_USER/keys/$MANTA_KEY_ID\",algorithm=\"rsa-sha256\""
 DIR_TYPE='application/json; type=directory'
 LOG_TYPE='application/x-bzip2'
@@ -41,7 +41,6 @@ MANTA_DIR=mako
 SUMMARY_FILE="$TMP_DIR/${MANTA_STORAGE_ID}.summary"
 SUMMARY_DIR="$MANTA_DIR/summary"
 MAKO_DIR=/opt/smartdc/mako
-MAKOFIND=$MAKO_DIR/makofind
 TARGET_DIR=/manta
 START_TIME=`date -u +"%Y-%m-%dT%H:%M:%SZ"` # Time that this script started.
 
@@ -105,7 +104,7 @@ function manta_put() {
 
 #
 # This function performs the heavy lifting when processing a mako manifest.  It
-# build out several associative arrays, each indexed by account id:
+# builds out several associative arrays, each indexed by account id:
 #
 # bytes[acct] contains a running sum of the number of bytes that account `acct'
 # currently consumed.  This value is obtained from the %s parameter in the call
@@ -118,8 +117,8 @@ function manta_put() {
 # consumes.  This value is the actual amount of data on disk consumed by the
 # account.
 #
-# At the completion of the call to awk, the contents of each array are printed
-# to give per-account information along a global summary.
+# At the completion of the call to gawk, the contents of each array are printed
+# to give per-account information along with a global summary.
 #
 function process_manifest() {
         file="$1"
@@ -128,7 +127,7 @@ function process_manifest() {
 		fatal "File $file does not exist."
 	fi
 
-        cat $file | awk '{
+        cat $file | gawk -M -v PREC="quad" '{
 		split($1, x, "/")
 		acct=x[3]
 		bytes[acct] += $2
@@ -138,22 +137,53 @@ function process_manifest() {
 		total_objects++
 		total_kilobytes += $4
 	} END {
-		printf("%-40s\t%-20s\t%-20s\t%-20s\t%s\n", "account", "bytes",
+		printf("%s\t%s\t%s\t%s\t%s\n", "account", "bytes",
 		    "objects", "average size kb", "kilobytes");
 
 		for (acct in bytes) {
-			printf("%-40s\t%-20f\t%-20f\t%-20f\t%f\n",
+			printf("%s\t%f\t%f\t%f\t%f\n",
 			    acct, bytes[acct], objects[acct],
 			    kilobytes[acct] / objects[acct], kilobytes[acct]);
 		}
 
-		printf("%-40s\t%-20f\t%-20f\t%-20f\t%f\n", "totals",
-		    total_bytes, total_objects, total_kilobytes / total_objects,
+		printf("%s\t%f\t%f\t%f\t%f\n", "totals", total_bytes,
+		    total_objects, total_kilobytes / total_objects,
 		    total_kilobytes);
 	}' > "$SUMMARY_FILE"
 
 	if [[ $? -ne 0 ]]; then
+		rm "$SUMMARY_FILE"
 		fatal "Unable to completely process mako manifest file $file."
+	fi
+}
+
+function generate_manifest() {
+	file=$1
+	#
+	# %p is the filename, %s is the logical size in bytes, %T@ is the
+	# timestamp of the last modification and %k is the physical size (i.e.
+	# size on disk) in kilobytes.  It is worth mentioning that in later
+	# versions of GNU find (> 4.2.33), the timestamp includes both, the
+	# number of seconds and the fractional part.  In order to maintain the
+	# same format as earlier versions of the mako manifest, we perform some
+	# onerous sequence of operations using gawk (below) to first separate
+	# each parameter in the line with the assumption that each argument is
+	# delimited by a tab.  We know that the third field (i.e. $3) will
+	# contain the timestamp.  We perform a split on $3, further dividing
+	# the field in to two smaller pieces, each delimited by a '.'.  This
+	# is stored in array `y' where y[1] is the whole part of the timestamp
+	# and y[2] is the fractional part.  No one is denying that this is not
+	# elegant, but the change in the way that GNU find prints timestamps
+	# permits few (if any) alternatives.
+	#
+	find "$TARGET_DIR" -type f -printf '%p\t%s\t%T@\t%k\n' |\
+	    gawk -M -v PREC="quad" -v FS="\t" -v OFS="\t" '{
+		split($3, y, ".");
+		print $1,$2,y[1],$4
+	}'> "$file"
+
+	if [[ $? -ne 0 ]]; then
+		fatal "Error: find failed to obtain a complete listing"
 	fi
 }
 
@@ -178,28 +208,18 @@ log "starting directory listing upload"
 
 mkdir -p $TMP_DIR
 
-#
-# %p is the filename, %s is the logical size in bytes, %T@ is the timestamp of
-# the last modification and %k is the physical size (i.e. size on disk) in
-# kilobytes.  It is worth mentioning that in later versions of GNU find
-# (> 4.2.33), the timestamp includes both, the number of seconds and the
-# fractional part.  In order to maintain the same format as earlier version of
-# the mako manifest, sed is used to strip out all characters between (and
-# inclusive of) the '.' and the end of the column of the timestamp.  That is,
-# sed is used to remove the fractional part of the timestamp.
-#
-find "$TARGET_DIR" -type f -printf '%p\t%s\t%T@\t%k\n' | sed 's/\..*\t/\t/g' > "$LISTING_FILE_PARTIAL"
+generate_manifest "$LISTING_FILE_PARTIAL"
 
-if [[ $? -ne 0 ]]; then
-	fatal "Error: makofind failed to obtain a complete listing"
-fi
-
-# Rename the file to reflect that makofind completed successfully
+# Rename the file to reflect that find completed successfully
 mv "$LISTING_FILE_PARTIAL" "$LISTING_FILE"
 
 log "Going to upload $LISTING_FILE to $MANTA_DIR/$MANTA_STORAGE_ID"
 manta_put_directory "$MANTA_DIR"
 manta_put "$MANTA_DIR/$MANTA_STORAGE_ID" "$LISTING_FILE"
+
+if [[ -z $MAKO_PROCESS_MANIFEST ]]; then
+	fatal "Error: MAKO_PROCESS_MANIFEST not set.  Please check /opt/smartdc/mako/etc/upload_config.json"
+fi
 
 if [[ $MAKO_PROCESS_MANIFEST -eq 1 ]]; then
 	log "Going to upload $SUMMARY_FILE to $SUMMARY_DIR/$MANTA_STORAGE_ID"
