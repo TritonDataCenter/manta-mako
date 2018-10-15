@@ -28,7 +28,7 @@ export PATH=/opt/local/bin:$PATH
 [ -z $MANTA_USER ] && MANTA_USER=$(json -f /opt/smartdc/common/etc/config.json manta.user)
 [ -z $MANTA_STORAGE_ID ] && MANTA_STORAGE_ID=$(cat /opt/smartdc/mako/etc/gc_config.json | json -ga manta_storage_id)
 
-MAKO_PROCESS_MANIFEST=$(cat /opt/smartdc/mako/etc/upload_config.json | json -ga process_manifest)
+MAKO_PROCESS_MANIFEST=$(json -f /opt/smartdc/mako/etc/upload_config.json process_manifest)
 AUTHZ_HEADER="keyId=\"/$MANTA_USER/keys/$MANTA_KEY_ID\",algorithm=\"rsa-sha256\""
 DIR_TYPE='application/json; type=directory'
 LOG_TYPE='application/x-bzip2'
@@ -221,7 +221,7 @@ if [[ -z $MAKO_PROCESS_MANIFEST ]]; then
 	fatal "Error: MAKO_PROCESS_MANIFEST not set.  Please check /opt/smartdc/mako/etc/upload_config.json"
 fi
 
-if [[ $MAKO_PROCESS_MANIFEST -eq 1 ]]; then
+if [[ $MAKO_PROCESS_MANIFEST == true ]]; then
 	log "Going to upload $SUMMARY_FILE to $SUMMARY_DIR/$MANTA_STORAGE_ID"
 	process_manifest "$LISTING_FILE"
 	manta_put_directory "$SUMMARY_DIR"
