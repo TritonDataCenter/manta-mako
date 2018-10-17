@@ -123,68 +123,92 @@ function manta_put() {
 function process_manifest() {
         file="$1"
 
-	if [ ! -f $file ]; then
-		fatal "File $file does not exist."
-	fi
+        if [ ! -f $file ]; then
+                fatal "File $file does not exist."
+        fi
 
         cat $file | gawk -M -v PREC="quad" '{
-		split($1, x, "/")
-		acct=x[3]
-		bytes[acct] += $2
-		objects[acct]++
-		kilobytes[acct] += $4
-		total_bytes += $2
-		total_objects++
-		total_kilobytes += $4
-	} END {
-		printf("%s\t%s\t%s\t%s\t%s\n", "account", "bytes",
-		    "objects", "average size kb", "kilobytes");
+                split($1, x, "/")
+                acct=x[3]
+                bytes[acct] += $2
+                objects[acct]++
+                kilobytes[acct] += $4
+                total_bytes += $2
+                total_objects++
+                total_kilobytes += $4
 
-		for (acct in bytes) {
-			printf("%s\t%f\t%f\t%f\t%f\n",
-			    acct, bytes[acct], objects[acct],
-			    kilobytes[acct] / objects[acct], kilobytes[acct]);
-		}
+                #
+                # If the Manta directory happens to be "tombstone" then x[4]
+                # contains the name of the subdirectory which will always be
+                # a date.  We want to organize the objects in this part of the
+                # tree by their subdirectory name (i.e. its date of creation)
+                # so that when analyzing a summary, a determination can be made
+                # not only about how much storage we stand to reclaim in overall
+                # but also _when_ we stand to reclaim each fraction of the
+                # tombstone directory tree.
+                #
+                if (x[3] == "tombstone") {
+                        date=x[4]
+                        tombstone_bytes[date] += $2
+                        tombstone_kilobytes[date] += $4
+                        tombstone_objects[date]++
+                }
+        } END {
+                printf("%s\t%s\t%s\t%s\t%s\n", "account", "bytes",
+                    "objects", "average size kb", "kilobytes");
 
-		printf("%s\t%f\t%f\t%f\t%f\n", "totals", total_bytes,
-		    total_objects, total_kilobytes / total_objects,
-		    total_kilobytes);
-	}' > "$SUMMARY_FILE"
+                for (date in tombstone_bytes) {
+                        printf("tombstone_%s\t%f\t%f\t%f\t%f\n", date,
+                            tombstone_bytes[date], tombstone_objects[date],
+                            tombstone_kilobytes[date] / tombstone_objects[date],
+                            tombstone_kilobytes[date]);
+                }
 
-	if [[ $? -ne 0 ]]; then
-		rm "$SUMMARY_FILE"
-		fatal "Unable to completely process mako manifest file $file."
-	fi
+                for (acct in bytes) {
+                        printf("%s\t%f\t%f\t%f\t%f\n",
+                            acct, bytes[acct], objects[acct],
+                            kilobytes[acct] / objects[acct], kilobytes[acct]);
+                }
+
+                printf("%s\t%f\t%f\t%f\t%f\n", "totals", total_bytes,
+                    total_objects, total_kilobytes / total_objects,
+                    total_kilobytes);
+        }' > "$SUMMARY_FILE"
+
+        if [[ $? -ne 0 ]]; then
+                rm "$SUMMARY_FILE"
+                fatal "Unable to completely process mako manifest file $file."
+        fi
 }
 
 function generate_manifest() {
-	file=$1
-	#
-	# %p is the filename, %s is the logical size in bytes, %T@ is the
-	# timestamp of the last modification and %k is the physical size (i.e.
-	# size on disk) in kilobytes.  It is worth mentioning that in later
-	# versions of GNU find (> 4.2.33), the timestamp includes both, the
-	# number of seconds and the fractional part.  In order to maintain the
-	# same format as earlier versions of the mako manifest, we perform some
-	# onerous sequence of operations using gawk (below) to first separate
-	# each parameter in the line with the assumption that each argument is
-	# delimited by a tab.  We know that the third field (i.e. $3) will
-	# contain the timestamp.  We perform a split on $3, further dividing
-	# the field in to two smaller pieces, each delimited by a '.'.  This
-	# is stored in array `y' where y[1] is the whole part of the timestamp
-	# and y[2] is the fractional part.  No one is denying that this is not
-	# elegant, but the change in the way that GNU find prints timestamps
-	# permits few (if any) alternatives.
-	#
-	find "$TARGET_DIR" -type f -printf '%p\t%s\t%T@\t%k\n' |\
-	    gawk -M -v PREC="quad" -v FS="\t" -v OFS="\t" '{
-		split($3, y, ".");
-		print $1,$2,y[1],$4
-	}'> "$file"
+        file=$1
+        #
+        # %p is the filename, %s is the logical size in bytes, %T@ is the
+        # timestamp of the last modification and %k is the physical size (i.e.
+        # size on disk) in kilobytes.  It is worth mentioning that in later
+        # versions of GNU find (> 4.2.33), the timestamp includes both, the
+        # number of seconds and the fractional part.  In order to maintain the
+        # same format as earlier versions of the mako manifest, we perform some
+        # onerous sequence of operations using gawk (below) to first separate
+        # each parameter in the line with the assumption that each argument is
+        # delimited by a tab.  We know that the third field (i.e. $3) will
+        # contain the timestamp.  We perform a split on $3, further dividing
+        # the field in to two smaller pieces, each delimited by a '.'.  This
+        # is stored in array `y' where y[1] is the whole part of the timestamp
+        # and y[2] is the fractional part.  No one is denying that this is not
+        # elegant, but the change in the way that GNU find prints timestamps
+        # permits few (if any) alternatives.
+        #
+        find "$TARGET_DIR" -type f -printf '%p\t%s\t%T@\t%k\n' |\
+            gawk -M -v PREC="quad" -v FS="\t" -v OFS="\t" '{
+                split($3, y, ".");
+                print $1,$2,y[1],$4
+        }'> "$file"
 
-	if [[ $? -ne 0 ]]; then
-		fatal "Error: find failed to obtain a complete listing"
-	fi
+        if [[ $? -ne 0 ]]; then
+                fatal "Error: find failed to obtain a complete listing"
+        fi
 }
 
 ## Main
@@ -218,14 +242,14 @@ manta_put_directory "$MANTA_DIR"
 manta_put "$MANTA_DIR/$MANTA_STORAGE_ID" "$LISTING_FILE"
 
 if [[ -z $MAKO_PROCESS_MANIFEST ]]; then
-	fatal "Error: MAKO_PROCESS_MANIFEST not set.  Please check /opt/smartdc/mako/etc/upload_config.json"
+        fatal "Error: MAKO_PROCESS_MANIFEST not set.  Please check /opt/smartdc/mako/etc/upload_config.json"
 fi
 
 if [[ $MAKO_PROCESS_MANIFEST == true ]]; then
-	log "Going to upload $SUMMARY_FILE to $SUMMARY_DIR/$MANTA_STORAGE_ID"
-	process_manifest "$LISTING_FILE"
-	manta_put_directory "$SUMMARY_DIR"
-	manta_put "$SUMMARY_DIR/$MANTA_STORAGE_ID" "$SUMMARY_FILE"
+        log "Going to upload $SUMMARY_FILE to $SUMMARY_DIR/$MANTA_STORAGE_ID"
+        process_manifest "$LISTING_FILE"
+        manta_put_directory "$SUMMARY_DIR"
+        manta_put "$SUMMARY_DIR/$MANTA_STORAGE_ID" "$SUMMARY_FILE"
 fi
 
 log "Cleaning up..."
