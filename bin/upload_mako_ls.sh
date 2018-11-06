@@ -44,14 +44,10 @@ MAKO_DIR=/opt/smartdc/mako
 TARGET_DIR=/manta
 START_TIME=`date -u +"%Y-%m-%dT%H:%M:%SZ"` # Time that this script started.
 
-
-
 # Mutables
 
 NOW=""
 SIGNATURE=""
-
-
 
 ## Functions
 
@@ -61,12 +57,10 @@ function fatal {
     exit 1
 }
 
-
 function log {
     local LNOW=`date`
     echo "$LNOW: $(basename $0): info: $*" >&2
 }
-
 
 function sign() {
     NOW=$(date -u "+%a, %d %h %Y %H:%M:%S GMT")
@@ -75,7 +69,6 @@ function sign() {
         openssl enc -e -a | tr -d '\n') \
         || fatal "unable to sign data"
 }
-
 
 function manta_put_directory() {
     sign || fatal "unable to sign"
@@ -88,14 +81,21 @@ function manta_put_directory() {
         $MANTA_URL/$MANTA_USER/stor/${1} 2>&1
 }
 
-
 function manta_put() {
     sign || fatal "unable to sign"
+
+    datacenter=$(mdata-get sdc:datacenter_name)
+
+    if [[ -z "$datacenter" ]]; then
+        fatal "unable to determine datacenter"
+    fi
+
     curl -vfsSk \
         -X PUT \
         -H "Date: $NOW" \
         -H "Authorization: Signature $AUTHZ_HEADER,signature=\"$SIGNATURE\"" \
         -H "Connection: close" \
+        -H "m-datacenter: $datacenter" \
         -H "m-mako-dump-time: $START_TIME" \
         $MANTA_URL/$MANTA_USER/stor/${1} \
         -T $2 \
