@@ -16,7 +16,12 @@ thread_pool mpu threads=8;
 error_log /var/log/mako-error.log info;
 
 events {
+{{#MAKO_WORKER_CONNECTIONS}}
+        worker_connections {{MAKO_WORKER_CONNECTIONS}};
+{{/MAKO_WORKER_CONNECTIONS}}
+{{^MAKO_WORKER_CONNECTIONS}}
 	worker_connections  1024;
+{{/MAKO_WORKER_CONNECTIONS}}
 	use eventport;
 }
 

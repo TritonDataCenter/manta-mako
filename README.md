@@ -92,6 +92,14 @@ server at `http://1.2.3.4:8080/`.
 
 ## SAPI Tunables
 
+    MAKO_WORKER_PROCESSES      Number of nginx worker processes
+
+    MAKO_WORKER_CONNECTIONS    Maximum number of connections per nginx worker
+                               process
+
+    MAKO_THREAD_POOL_SIZE      Number of threads to use for multi-part upload
+                               thread pool
+
     MAKO_PROCESS_MANIFEST      Boolean value which when set, enables the post
                                processing of a mako manifest to produce a
                                summary as well.  The summary provides
