@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2017, Joyent, Inc.
+# Copyright (c) 2019, Joyent, Inc.
 #
 
 #
@@ -50,21 +50,34 @@ NODE_PREBUILT_TAG	= zone
 # minimal-multiarch 18.1.0
 NODE_PREBUILT_IMAGE	= 1ad363ec-3b83-11e8-8521-2f68a4a34d5d
 
-include ./tools/mk/Makefile.defs
+#
+# Stuff used for buildimage
+#
+BASE_IMAGE_UUID		= b6ea7cb4-6b90-48c0-99e7-1d34c2895248
+BUILDIMAGE_NAME		= manta-storage
+BUILDIMAGE_DESC		= Manta Storage
+BUILDIMAGE_PKGSRC	= pcre-8.42 findutils-4.6.0nb1 gawk-4.1.4nb1
+AGENTS = amon config minnow registrar
+
+ENGBLD_USE_BUILDIMAGE	= true
+ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)
+include ./deps/eng/tools/mk/Makefile.defs
+TOP ?= $(error Unable to access eng.git submodule Makefiles.)
+
 ifeq ($(shell uname -s),SunOS)
-	include ./tools/mk/Makefile.node_prebuilt.defs
+	include ./deps/eng/tools/mk/Makefile.node_prebuilt.defs
+	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.defs
 else
-	include ./tools/mk/Makefile.node.defs
+	include ./deps/eng/tools/mk/Makefile.node.defs
 endif
-include ./tools/mk/Makefile.node_deps.defs
 include ./tools/mk/Makefile.nginx.defs
 
 #
 # MG Variables
 #
 ROOT            := $(shell pwd)
-RELEASE_TARBALL := mako-pkg-$(STAMP).tar.bz2
-RELSTAGEDIR          := /tmp/$(STAMP)
+RELEASE_TARBALL := $(NAME)-pkg-$(STAMP).tar.gz
+RELSTAGEDIR		:= /tmp/$(NAME)-$(STAMP)
 
 #
 # v8plus uses the CTF tools as part of its build, but they can safely be
@@ -103,17 +116,6 @@ check-nginx: $(NGINX_EXEC)
 	$(NGXSYMCHECK) $(NGINX_EXEC)
 prepush: check-nginx
 
-#
-# The eng.git makefiles define the clean target using a :: rule. This
-# means that we're allowed to have multiple bodies that define the rule
-# and they should all take effect. We ignore the return value from the
-# recursive make clean because there is no guarantee that there's a
-# generated Makefile or that the nginx submodule has been initialized
-# and checked out.
-#
-clean::
-	-(cd deps/nginx && $(MAKE) clean)
-
 .PHONY: release
 release: all deps docs $(SMF_MANIFESTS) check-nginx
 	@echo "Building $(RELEASE_TARBALL)"
@@ -135,24 +137,20 @@ release: all deps docs $(SMF_MANIFESTS) check-nginx
 	    $(RELSTAGEDIR)/root/opt/smartdc/boot/setup.sh
 	chmod 755 $(RELSTAGEDIR)/root/opt/smartdc/mako/boot/setup.sh
 	rm $(RELSTAGEDIR)/root/opt/smartdc/mako/nginx/conf/*.default
-	(cd $(RELSTAGEDIR) && $(TAR) -jcf $(ROOT)/$(RELEASE_TARBALL) root site)
+	(cd $(RELSTAGEDIR) && $(TAR) -I pigz -cf $(ROOT)/$(RELEASE_TARBALL) root site)
 	@rm -rf $(RELSTAGEDIR)
 
 .PHONY: publish
 publish: release
-	@if [[ -z "$(BITS_DIR)" ]]; then \
-		@echo "error: 'BITS_DIR' must be set for 'publish' target"; \
-		exit 1; \
-	fi
-	mkdir -p $(BITS_DIR)/mako
-	cp $(ROOT)/$(RELEASE_TARBALL) $(BITS_DIR)/mako/$(RELEASE_TARBALL)
+	mkdir -p $(ENGBLD_BITS_DIR)/$(NAME)
+	cp $(ROOT)/$(RELEASE_TARBALL) $(ENGBLD_BITS_DIR)/$(NAME)/$(RELEASE_TARBALL)
 
-include ./tools/mk/Makefile.deps
+include ./deps/eng/tools/mk/Makefile.deps
 ifeq ($(shell uname -s),SunOS)
-	include ./tools/mk/Makefile.node_prebuilt.targ
+	include ./deps/eng/tools/mk/Makefile.node_prebuilt.targ
+	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.targ
 else
-	include ./tools/mk/Makefile.node.targ
+	include ./deps/eng/tools/mk/Makefile.node.targ
 endif
-include ./tools/mk/Makefile.node_deps.targ
 include ./tools/mk/Makefile.nginx.targ
-include ./tools/mk/Makefile.targ
+include ./deps/eng/tools/mk/Makefile.targ

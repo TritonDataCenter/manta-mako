@@ -6,16 +6,11 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2019, Joyent, Inc.
 #
 
 #
 # Makefile.nginx.targ: See Makefile.nginx.defs.
-#
-# NOTE: This makefile comes from the "eng" repo. It's designed to be dropped
-# into other repos as-is without requiring any modifications. If you find
-# yourself changing this file, you should instead update the original copy in
-# eng.git and then update your repo to use the new version.
 #
 
 deps/nginx/auto/configure: | deps/nginx/.git
@@ -31,5 +26,12 @@ $(NGINX_EXEC): | deps/nginx/Makefile
 
 DISTCLEAN_FILES += $(NGINX_INSTALL)
 
-distclean::
-	-([[ -d deps/nginx ]] && cd deps/nginx && $(MAKE) clean)
+#
+# The eng.git makefiles define the clean target using a :: rule. This
+# means that we're allowed to have multiple bodies that define the rule
+# and they should all take effect. Nginx's generated Makefile doesn't
+# have a distclean target, so we have it clean instead.
+#
+clean distclean::
+	test ! -f deps/nginx/Makefile || (cd deps/nginx && $(MAKE) clean)
+
