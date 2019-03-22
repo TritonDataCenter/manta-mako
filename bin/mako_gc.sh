@@ -270,10 +270,9 @@ function process_file() {
 
         local LB_ARRAY=($LBYTES_LINE)
         local LBYTES=${LB_ARRAY[7]}
-        TOTAL_LOGICAL_BYTES=$[$LBYTES + $1]
 
         # Call the rust based gc app to do the hot loop
-        ./gc "$LFILE" "$MANTA_STORAGE_ID" "$TOTAL_LOGICAL_BYTES"
+        ./gc "$LFILE" "$MANTA_STORAGE_ID" "$LBYTES"
         [[ $? -eq 0 ]] || log "GC program failed. Something is wrong."
 
         rm $LFILE
