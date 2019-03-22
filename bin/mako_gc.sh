@@ -273,7 +273,10 @@ function process_file() {
 
         # Call the rust based gc app to do the hot loop
         /opt/smartdc/mako/bin/gc "$LFILE" "$MANTA_STORAGE_ID" "$LBYTES"
-        [[ $? -eq 0 ]] || log "GC program failed. Something is wrong."
+        if [[ $? -eq 0 ]]; then
+            log "GC program failed for $LFILE. Moving on with the next file."
+            continue
+        fi
 
         rm $LFILE
         [[ $? -eq 0 ]] || fatal "Unable to rm $LFILE. Something is wrong."
