@@ -272,7 +272,7 @@ function process_file() {
         local LBYTES=${LB_ARRAY[7]}
 
         # Call the rust based gc app to do the hot loop
-        ./gc "$LFILE" "$MANTA_STORAGE_ID" "$LBYTES"
+        /opt/smartdc/mako/bin/gc "$LFILE" "$MANTA_STORAGE_ID" "$LBYTES"
         [[ $? -eq 0 ]] || log "GC program failed. Something is wrong."
 
         rm $LFILE
