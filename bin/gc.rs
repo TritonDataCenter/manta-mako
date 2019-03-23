@@ -9,7 +9,16 @@ use std::path::Path;
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
 
+    /*
+     * It is likely that we will encounter a path to a record file that does not exist. In these cases we
+     * need to bail out of the program and let the wrapping shell script delete the file.
+     */
     let records_file_path = &args[1];
+    if !Path::new(&records_file_path).exists() {
+        println!("Record file: {} did not exist", records_file_path);
+        process::exit(0);
+    }
+
     let records_file = fs::File::open(records_file_path)?;
     let records = BufReader::new(records_file);
 
