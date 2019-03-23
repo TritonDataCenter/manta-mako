@@ -4,6 +4,7 @@ use std::io::{self, BufReader};
 use std::io::prelude::*;
 use std::time;
 use std::process;
+use std::path::Path;
 
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -23,10 +24,19 @@ fn main() -> io::Result<()> {
         println!("Processing {}", line_val);
 
         let line_cols: Vec<&str> = line_val.split_whitespace().collect();
-
         if line_cols[1] != storage_id { continue; }
 
+        /*
+         * Sometimes we will encounter a situation where the object to be deleted has already been deleted.
+         * In these cases we want to output that this happened and move forward without doing anything more
+         * since this is an expected case.
+         */
         let object = format!("/manta/{}/{}", line_cols[2], line_cols[3]);
+        if !Path::new(&object).exists() {
+            println!("Object: {} did not exist", object);
+            continue; 
+        }
+
         let mut object_bytes = 0;
         if let Ok(md) = fs::metadata(&object) { object_bytes += md.len() }
         total_bytes_processed += object_bytes;
@@ -45,10 +55,7 @@ fn main() -> io::Result<()> {
         bytes_processed_file.write_all(cur_physical_bytes.as_bytes())?;
         bytes_processed_file.write_all(total_physical_bytes.as_bytes())?;
 
-        match fs::remove_file(object) {
-            Ok(v) => v,
-            Err(e) => println!("{}", e),
-        }
+        fs::remove_file(object)?;
     }
 
     Ok(())
