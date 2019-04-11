@@ -28,11 +28,32 @@ fn main() -> io::Result<()> {
     let storage_id = &args[2].clone();
     let mut total_bytes_processed = args[3].parse::<u64>().unwrap();
 
+    /*
+     * If we encounter an invalid instruction we set this to true so that when we're done processing the
+     * current file, we can return a non-zero exit code and signal to mako_gc.sh that the current
+     * instruction file should be preserved for later analysis.
+     */
+    let mut invalid_instruction_seen = false;
+
     for line in records.lines() {
         let line_val = line.unwrap();
         println!("Processing {}", line_val);
 
         let line_cols: Vec<&str> = line_val.split_whitespace().collect();
+
+        /*
+         * Due to a bug in manta-garbage-collector it is possible that we will encounter invalid
+         * instructions. If we do encounter an invalid instruction it is important that we preserve
+         * the original instruction file for postmortem analysis. Here we check that the line has
+         * the correct number of values and if not we log the invalid line, set invalid_instruction_seen
+         * to true and skip to the next instruction.
+         */
+        if line_cols.len() < 4 {
+            println!("Encountered invalid instruction {}", line_val);
+            invalid_instruction_seen = true;
+            continue;
+        }
+
         if line_cols[1] != storage_id { continue; }
 
         /*
@@ -66,6 +87,8 @@ fn main() -> io::Result<()> {
 
         fs::remove_file(object)?;
     }
+
+    if invalid_instruction_seen { process::exit(1); }
 
     Ok(())
 }

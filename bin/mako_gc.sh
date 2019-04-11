@@ -31,6 +31,7 @@ export PATH=/opt/local/bin:$PATH
 
 ## Global vars
 RECORD_PATH=/var/tmp/INPUTS
+BAD_INST_PATH=/var/tmp/BAD_INSTS
 BP_FILE=/var/tmp/bytes_processed
 
 # Immutables
@@ -275,6 +276,7 @@ function process_file() {
         /opt/smartdc/mako/bin/gc "$LFILE" "$MANTA_STORAGE_ID" "$LBYTES"
         if [[ $? -ne 0 ]]; then
             log "GC program failed for $LFILE. Moving on with the next file."
+            mv "$LFILE" "$BAD_INST_PATH/$LFILE"
             continue
         fi
 
@@ -289,6 +291,7 @@ function process_file() {
         # later determine whether or not it was actually removed.
         #
         if [[ $? -ne 0 ]]; then
+            log "Failed to delete the instruction file from manta"
             ret=1
             continue
         fi
@@ -305,6 +308,7 @@ function process_file() {
 : ${MANTA_STORAGE_ID:?"Manta storage id must be set."}
 
 mkdir -p $TMP_DIR
+mkdir -p $BAD_INST_PATH
 
 # Update our files to process
 log "rsync with feeder"
