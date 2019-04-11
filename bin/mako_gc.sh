@@ -277,11 +277,11 @@ function process_file() {
         if [[ $? -ne 0 ]]; then
             log "GC program failed for $LFILE. Moving on with the next file."
             mv "$LFILE" "$BAD_INST_PATH/$LFILE"
-            continue
+        else
+            rm $LFILE
+            [[ $? -eq 0 ]] || fatal "Unable to rm $LFILE. Something is wrong."
         fi
 
-        rm $LFILE
-        [[ $? -eq 0 ]] || fatal "Unable to rm $LFILE. Something is wrong."
         manta_delete $MFILE
 
         #
