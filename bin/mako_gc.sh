@@ -276,7 +276,7 @@ function process_file() {
         /opt/smartdc/mako/bin/gc "$LFILE" "$MANTA_STORAGE_ID" "$LBYTES"
         if [[ $? -ne 0 ]]; then
             log "GC program failed for $LFILE. Moving on with the next file."
-            mv "$LFILE" "$BAD_INST_PATH/$LFILE"
+            mv "$LFILE" "$BAD_INST_PATH/."
         else
             rm $LFILE
             [[ $? -eq 0 ]] || fatal "Unable to rm $LFILE. Something is wrong."
