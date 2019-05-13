@@ -385,6 +385,10 @@ then
     fatal "$INSTRUCTIONS_DIR does not exist."
 fi
 
+if [[ ! -x /opt/smartdc/mako/bin/process_instructions ]]; then
+    fatal "Missing 'process_instructions' tool, will not be able to collect any garbage"
+fi
+
 # Load existing values of metrics (now that we're the only one running)
 load_metrics
 
