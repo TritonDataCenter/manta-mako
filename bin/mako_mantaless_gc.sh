@@ -249,8 +249,6 @@ function rsync_from_feeder() {
         fatal "Couldn't find Manta feeder"
     fi
 
-    mkdir -p $INSTRUCTIONS_DIR
-
     #
     # rsync the files from this collector to the mako.tmp directory.
     #
@@ -361,6 +359,7 @@ function process_file() {
 
 : ${MANTA_STORAGE_ID:?"Manta storage id must be set."}
 
+mkdir -p $INSTRUCTIONS_DIR
 mkdir -p $BAD_INSTRUCTIONS_DIR
 
 # Check the last pid to see if a previous cron is still running...
@@ -374,16 +373,6 @@ fi
 
 CREATED_PID_FILE=1
 echo -n $PID >$PID_FILE
-
-if [[ -z "$INSTRUCTIONS_DIR" ]]
-then
-    fatal "No path specified."
-fi
-
-if [[ ! -d "$INSTRUCTIONS_DIR" ]]
-then
-    fatal "$INSTRUCTIONS_DIR does not exist."
-fi
 
 if [[ ! -x /opt/smartdc/mako/bin/process_instructions ]]; then
     fatal "Missing 'process_instructions' tool, will not be able to collect any garbage"
