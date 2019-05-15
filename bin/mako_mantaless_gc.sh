@@ -44,7 +44,8 @@ METRICS_FILE=/var/spool/manta_gc/metrics/mako_gc
 FEEDER_PATH=/var/spool/manta_gc/mako/$MANTA_STORAGE_ID
 HOSTNAME=`hostname`
 PID=$$
-PID_FILE=/tmp/mako_gc.pid
+PID_FILE=/tmp/mako_mantaless_gc.pid
+PREV_PID_FILE=/tmp/mako_gc.pid
 SCRIPT=$(basename $0)
 
 # Mutables
@@ -361,6 +362,27 @@ function process_file() {
 
 mkdir -p $INSTRUCTIONS_DIR
 mkdir -p $BAD_INSTRUCTIONS_DIR
+
+#
+# Check the old name for the pid file. This was used after CM-2915 but that
+# conflicts with the existing mako_gc.sh such that the two scripts cannot
+# both run at the same time. In order to facilitate upgrading from that
+# version to this version, we also check for that pid file. If it exists, we'll
+# exit only if that's also *us*.
+#
+# When that running process exits, the next time we'll create *our own* pid
+# file with the new name and from then on, it'll never be us using that pid
+# file. So this code can be removed on the next update.
+#
+LAST_PID=$(cat $PREV_PID_FILE 2>/dev/null || true)
+if [[ -n "$LAST_PID" ]]; then
+    if kill -0 $LAST_PID; then
+        if [[ "$(pargs -l $LAST_PID)" =~ "mako_mantaless_gc.sh" ]]; then
+            echo "$0 process still running.  Exiting..."
+            exit 1
+        fi
+    fi
+fi
 
 # Check the last pid to see if a previous cron is still running...
 LAST_PID=$(cat $PID_FILE 2>/dev/null || true)
