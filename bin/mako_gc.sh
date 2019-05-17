@@ -218,9 +218,11 @@ function rsync_feeder() {
     FEEDER_IP=${FEEDER_MAP["$REGION"]}
     MSI=$(json -f /var/tmp/metadata.json MANTA_STORAGE_ID) && [[ -n $MSI ]] && rsync "rsync://$FEEDER_IP/root/var/tmp/makos/$MSI/*-*" $RECORD_PATH
 
-    [[ $? -eq 0 ]] || fatal "Couldn't rsync from feeder"
-
-    log "Successfully rsync'd with the feeder using MANTA_STORAGE_ID: $MSI"
+    if [[ $? -ne 0 ]]; then
+        log "Couldn't rsync from feeder"
+    else
+        log "Successfully rsync'd with the feeder using MANTA_STORAGE_ID: $MSI"
+    fi
 
     return 0
 }
