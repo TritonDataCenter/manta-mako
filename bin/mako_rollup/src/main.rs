@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::time::{Duration, Instant};
+use std::time::{Instant, SystemTime};
 use walkdir::WalkDir;
 
 struct Account {
@@ -46,21 +46,28 @@ fn main() {
         }
     }
 
-    println!("# HELP mako_used_bytes The current number of bytes used on a mako\n# TYPE mako_used_bytes gauge");
+    println!("# HELP used_bytes The current number of bytes used on a mako\n# TYPE used_bytes gauge");
 
     for (k, v) in accounts.iter() {
-        println!("mako_used_bytes{{account=\"{}\"}} {}", k, v.bytes);
+        println!("used_bytes{{account=\"{}\"}} {}", k, v.bytes);
     }
 
-    println!("# HELP mako_object_count The current number of objects on a mako\n# TYPE mako_object_count gauge");
+    println!("# HELP The current number of objects on a mako\n# TYPE object_count gauge");
 
     for (k, v) in accounts.iter() {
-        println!("mako_object_count{{account=\"{}\"}} {}", k, v.objects);
+        println!("object_count{{account=\"{}\"}} {}", k, v.objects);
     }
 
-    println!("# HELP mako_rollup_duration_seconds Duration in seconds of the mako rollup process");
+    println!("# HELP rollup_duration_seconds Duration in seconds of the mako rollup process");
     println!(
-        "# TYPE mako_rollup_duration_seconds gauge\nmako_rollup_duration_seconds {}",
+        "# TYPE rollup_duration_seconds gauge\nrollup_duration_seconds {}",
         start.elapsed().as_secs()
+    );
+
+    let unix_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH);
+    println!("# HELP rollup_last_run_time Last run of the mako rollup process expressed as a UNIX timestamp");
+    println!(
+        "# TYPE rollup_last_run_time gauge\nrollup_last_run_time {}",
+        unix_time.unwrap().as_secs()
     );
 }
