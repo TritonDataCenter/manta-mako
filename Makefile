@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2019, Joyent, Inc.
+# Copyright 2019 Joyent, Inc.
 #
 
 #
@@ -25,7 +25,6 @@
 #
 # Tools
 #
-BASHSTYLE	 = $(NODE) tools/bashstyle
 TAPE		:= ./node_modules/.bin/tape
 NPM		:= npm
 NGXSYMCHECK	= tools/ngx_symcheck
@@ -40,6 +39,7 @@ JSL_CONF_NODE	= tools/jsl.node.conf
 JSL_FILES_NODE	= $(JS_FILES)
 JSSTYLE_FILES	= $(JS_FILES)
 JSSTYLE_FLAGS	= -f tools/jsstyle.conf
+SMF_MANIFESTS	= smf/manifests/nginx.xml
 
 #
 # Variables
@@ -67,6 +67,7 @@ TOP ?= $(error Unable to access eng.git submodule Makefiles.)
 ifeq ($(shell uname -s),SunOS)
 	include ./deps/eng/tools/mk/Makefile.node_prebuilt.defs
 	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.defs
+	include ./deps/eng/tools/mk/Makefile.smf.defs
 else
 	include ./deps/eng/tools/mk/Makefile.node.defs
 endif
@@ -149,6 +150,7 @@ include ./deps/eng/tools/mk/Makefile.deps
 ifeq ($(shell uname -s),SunOS)
 	include ./deps/eng/tools/mk/Makefile.node_prebuilt.targ
 	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.targ
+	include ./deps/eng/tools/mk/Makefile.smf.targ
 else
 	include ./deps/eng/tools/mk/Makefile.node.targ
 endif

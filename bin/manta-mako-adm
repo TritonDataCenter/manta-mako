@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2015, Joyent, Inc.
+# Copyright 2019 Joyent, Inc.
 #
 
 #
@@ -180,7 +180,7 @@ function check_status
 		warn "minnow is disabled, but moray record indicates enabled"
 		rv=1
 	fi
-	
+
 	return $rv
 }
 
