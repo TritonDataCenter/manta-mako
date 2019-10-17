@@ -7,7 +7,7 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright 2019 Joyent, Inc.
 #
 
 set -o xtrace
@@ -129,7 +129,7 @@ function manta_setup_nginx {
 
     logadm -w mako_logs -C 48 -p 1h \
         -t '/var/log/manta/upload/$basename_$nodename_%FT%H:00:00.log' \
-        -a 'pkill -USR1 -ox nginx; cd /var/log/manta/upload; mv mako-error* $(ls mako-error* | sed "s/\.log_/_/"); mv mako-access* $(ls mako-access* | sed "s/\.log_/_/")' \
+        -a 'pkill -USR1 -ox nginx; cd /var/log/manta/upload; for file in mako-error.log_* mako-access.log_*; do mv "$file" "${file/.log_/_}"; done' \
         '/var/log/mako-{access,error}.log'
 }
 
