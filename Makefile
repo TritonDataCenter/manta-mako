@@ -48,7 +48,7 @@ NAME			= mako
 # Note: we don't really care about node version, we just need *a* node for
 # things like bashstyle.
 NODE_PREBUILT_VERSION	= v8.16.1
-NODE_PREBUILT_TAG	= zone
+NODE_PREBUILT_TAG	= zone64
 # minimal-64 19.2.0
 NODE_PREBUILT_IMAGE	= 7f4d80b4-9d70-11e9-9388-6b41834cbeeb
 
