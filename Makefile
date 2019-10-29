@@ -47,16 +47,16 @@ SMF_MANIFESTS	= smf/manifests/nginx.xml
 NAME			= mako
 NODE_PREBUILT_VERSION	= v0.10.48
 NODE_PREBUILT_TAG	= zone
-# minimal-multiarch 18.1.0
-NODE_PREBUILT_IMAGE	= 1ad363ec-3b83-11e8-8521-2f68a4a34d5d
+# minimal-64 19.2.0
+NODE_PREBUILT_IMAGE	= 7f4d80b4-9d70-11e9-9388-6b41834cbeeb
 
 #
 # Stuff used for buildimage
 #
-BASE_IMAGE_UUID		= b6ea7cb4-6b90-48c0-99e7-1d34c2895248
+BASE_IMAGE_UUID		= a0d5f456-ba0f-4b13-bfdc-5e9323837ca7
 BUILDIMAGE_NAME		= manta-storage
 BUILDIMAGE_DESC		= Manta Storage
-BUILDIMAGE_PKGSRC	= pcre-8.42 findutils-4.6.0nb1 gawk-4.1.4nb1
+BUILDIMAGE_PKGSRC	=
 AGENTS = amon config minnow registrar
 
 ENGBLD_USE_BUILDIMAGE	= true
