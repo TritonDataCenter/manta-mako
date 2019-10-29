@@ -69,7 +69,10 @@ ifeq ($(shell uname -s),SunOS)
 	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.defs
 	include ./deps/eng/tools/mk/Makefile.smf.defs
 else
-	include ./deps/eng/tools/mk/Makefile.node.defs
+	NPM=npm
+	NODE=node
+	NPM_EXEC=$(shell which npm)
+	NODE_EXEC=$(shell which node)
 endif
 include ./tools/mk/Makefile.nginx.defs
 
@@ -151,8 +154,6 @@ ifeq ($(shell uname -s),SunOS)
 	include ./deps/eng/tools/mk/Makefile.node_prebuilt.targ
 	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.targ
 	include ./deps/eng/tools/mk/Makefile.smf.targ
-else
-	include ./deps/eng/tools/mk/Makefile.node.targ
 endif
 include ./tools/mk/Makefile.nginx.targ
 include ./deps/eng/tools/mk/Makefile.targ
