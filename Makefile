@@ -35,10 +35,10 @@ NGXSYMCHECK	= tools/ngx_symcheck
 DOC_FILES	=
 BASH_FILES	= bin/manta-mako-adm $(NGXSYMCHECK)
 JS_FILES	:= $(shell find lib test bin -name '*.js')
-JSL_CONF_NODE	= tools/jsl.node.conf
-JSL_FILES_NODE	= $(JS_FILES)
-JSSTYLE_FILES	= $(JS_FILES)
-JSSTYLE_FLAGS	= -f tools/jsstyle.conf
+# NOTE: we didn't add existing js files to ESLINT_FILES because none of them are
+# expected to be updated or used going forward. If you update a js file or add a
+# new one, you should make it work with eslint.
+ESLINT_FILES	=
 SMF_MANIFESTS	= smf/manifests/nginx.xml
 
 #
