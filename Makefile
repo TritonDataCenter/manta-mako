@@ -45,6 +45,12 @@ SMF_MANIFESTS	= smf/manifests/nginx.xml
 # Variables
 #
 NAME			= mako
+# Note: we don't really care about node version, we just need *a* node for
+# things like bashstyle.
+NODE_PREBUILT_VERSION	= v8.16.1
+NODE_PREBUILT_TAG	= zone
+# minimal-64 19.2.0
+NODE_PREBUILT_IMAGE	= 7f4d80b4-9d70-11e9-9388-6b41834cbeeb
 
 #
 # Stuff used for buildimage
@@ -61,6 +67,7 @@ include ./deps/eng/tools/mk/Makefile.defs
 TOP ?= $(error Unable to access eng.git submodule Makefiles.)
 
 ifeq ($(shell uname -s),SunOS)
+	include ./deps/eng/tools/mk/Makefile.node_prebuilt.defs
 	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.defs
 	include ./deps/eng/tools/mk/Makefile.smf.defs
 else
@@ -146,6 +153,7 @@ publish: release
 
 include ./deps/eng/tools/mk/Makefile.deps
 ifeq ($(shell uname -s),SunOS)
+	include ./deps/eng/tools/mk/Makefile.node_prebuilt.targ
 	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.targ
 	include ./deps/eng/tools/mk/Makefile.smf.targ
 endif
