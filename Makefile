@@ -35,30 +35,29 @@ NGXSYMCHECK	= tools/ngx_symcheck
 DOC_FILES	=
 BASH_FILES	= bin/manta-mako-adm $(NGXSYMCHECK)
 JS_FILES	:= $(shell find lib test bin -name '*.js')
-# NOTE: we didn't add existing js files to ESLINT_FILES because none of them are
-# expected to be updated or used going forward. If you update a js file or add a
-# new one, you should make it work with eslint.
-ESLINT_FILES	=
+JSL_CONF_NODE	= tools/jsl.node.conf
+JSL_FILES_NODE	= $(JS_FILES)
+JSSTYLE_FILES	= $(JS_FILES)
+JSSTYLE_FLAGS	= -f tools/jsstyle.conf
 SMF_MANIFESTS	= smf/manifests/nginx.xml
 
 #
 # Variables
 #
 NAME			= mako
-# Note: we don't really care about node version, we just need *a* node for
-# things like bashstyle.
 NODE_PREBUILT_VERSION	= v8.16.1
 NODE_PREBUILT_TAG	= zone64
-# minimal-64 19.2.0
-NODE_PREBUILT_IMAGE	= 7f4d80b4-9d70-11e9-9388-6b41834cbeeb
+# minimal-multiarch 18.4.0
+NODE_PREBUILT_IMAGE	= c2c31b00-1d60-11e9-9a77-ff9f06554b0f
 
 #
 # Stuff used for buildimage
 #
-BASE_IMAGE_UUID		= a0d5f456-ba0f-4b13-bfdc-5e9323837ca7
+# triton-origin-x86_64-18.4.0
+BASE_IMAGE_UUID		= a9368831-958e-432d-a031-f8ce6768d190
 BUILDIMAGE_NAME		= manta-storage
 BUILDIMAGE_DESC		= Manta Storage
-BUILDIMAGE_PKGSRC	=
+BUILDIMAGE_PKGSRC	= pcre-8.42 findutils-4.6.0nb2 gawk-4.2.1
 AGENTS = amon config minnow registrar
 
 ENGBLD_USE_BUILDIMAGE	= true
