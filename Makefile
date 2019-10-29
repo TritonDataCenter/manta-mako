@@ -45,10 +45,10 @@ SMF_MANIFESTS	= smf/manifests/nginx.xml
 # Variables
 #
 NAME			= mako
-NODE_PREBUILT_VERSION	= v0.10.48
-NODE_PREBUILT_TAG	= zone
-# minimal-64 19.2.0
-NODE_PREBUILT_IMAGE	= 7f4d80b4-9d70-11e9-9388-6b41834cbeeb
+#NODE_PREBUILT_VERSION	= v0.10.48
+#NODE_PREBUILT_TAG	= zone
+## minimal-64 19.2.0
+#NODE_PREBUILT_IMAGE	= 7f4d80b4-9d70-11e9-9388-6b41834cbeeb
 
 #
 # Stuff used for buildimage
