@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2017, Joyent, Inc.
+# Copyright 2019 Joyent, Inc.
 #
 
 #
@@ -55,6 +55,11 @@ function check_one
 
 [[ $# -ne 1 ]] && fatal "ngx_symcheck: <binary>"
 [[ ! -f $1 ]] && fatal "cannot find file: $1"
+
+if /usr/bin/file $1 | grep "64-bit"; then
+        echo "binary is 64-bit, won't have transitional symbols"
+        exit 0
+fi
 
 for s in $PRESENT_SYMS; do
 	check_one $1 $s 0
