@@ -1,5 +1,7 @@
 {
-	"manta_url": "{{MANTA_URL}}",
-	"manta_storage_id": "{{MANTA_STORAGE_ID}}",
-	"storage_max_tombstone_directories": {{#STORAGE_MAX_TOMBSTONE_DIRECTORIES}}{{STORAGE_MAX_TOMBSTONE_DIRECTORIES}}{{/STORAGE_MAX_TOMBSTONE_DIRECTORIES}}{{^STORAGE_MAX_TOMBSTONE_DIRECTORIES}}21{{/STORAGE_MAX_TOMBSTONE_DIRECTORIES}}
+    "admin_ip": "{{auto.ADMIN_IP}}",
+    "datacenter": "{{DATACENTER}}",
+    "instance": "{{auto.ZONENAME}}",
+    "manta_storage_id": "{{MANTA_STORAGE_ID}}",
+    "server_uuid": "{{auto.SERVER_UUID}}"
 }
