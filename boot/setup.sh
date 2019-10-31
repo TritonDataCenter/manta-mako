@@ -133,6 +133,10 @@ function manta_setup_nginx {
         '/var/log/mako-{access,error}.log'
 }
 
+function manta_setup_garbage_collector {
+    svccfg import /opts/smartdc/mako/smf/manifests/garbage-collector.xml
+}
+
 
 function manta_setup_crons {
     local crontab=/tmp/.manta_mako_cron
@@ -176,6 +180,9 @@ manta_setup_minnow
 
 echo "Updating nginx"
 manta_setup_nginx
+
+echo "Setting up garbage-collector"
+manta_setup_garbage_collector
 
 echo "Updating crons for garbage collection, etc."
 manta_setup_crons
