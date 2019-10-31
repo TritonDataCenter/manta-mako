@@ -134,7 +134,7 @@ function manta_setup_nginx {
 }
 
 function manta_setup_garbage_collector {
-    svccfg import /opts/smartdc/mako/smf/manifests/garbage-collector.xml
+    svccfg import /opt/smartdc/mako/smf/manifests/garbage-collector.xml
 }
 
 
@@ -188,5 +188,8 @@ echo "Updating crons for garbage collection, etc."
 manta_setup_crons
 
 manta_common_setup_end
+
+# metricPorts are scraped by cmon-agent for prometheus metrics.
+mdata-put metricPorts "8881"
 
 exit 0
