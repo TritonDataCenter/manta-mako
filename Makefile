@@ -34,7 +34,7 @@ NGXSYMCHECK	= tools/ngx_symcheck
 #
 DOC_FILES	=
 BASH_FILES	= bin/manta-mako-adm $(NGXSYMCHECK)
-JS_FILES	:= $(shell find lib test bin -name '*.js' | grep -v "collect-garbage.js")
+JS_FILES	:= $(shell find lib test bin -name '*.js' | grep -v "garbage-collector.js")
 JSL_CONF_NODE	= tools/jsl.node.conf
 JSL_FILES_NODE	= $(JS_FILES)
 JSSTYLE_FILES	= $(JS_FILES)
