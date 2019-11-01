@@ -10,8 +10,8 @@
     Copyright 2019 Joyent, Inc.
 -->
 
-<service_bundle type="manifest" name="manta-application-garbage-collector">
-    <service name="manta/application/garbage-collector" type="service" version="1">
+<service_bundle type="manifest" name="manta-application-garbage-deleter">
+    <service name="manta/application/garbage-deleter" type="service" version="1">
 
         <create_default_instance enabled="true" />
         <single_instance />
@@ -20,11 +20,11 @@
             <service_fmri value="svc:/milestone/multi-user:default" />
         </dependency>
 
-        <exec_method type="method" name="start" timeout_seconds="10" exec="/opt/smartdc/mako/build/node/bin/node --abort-on-uncaught-exception /opt/smartdc/mako/lib/garbage-collector.js &amp;">
+        <exec_method type="method" name="start" timeout_seconds="10" exec="/opt/smartdc/mako/build/node/bin/node --abort-on-uncaught-exception /opt/smartdc/mako/lib/garbage-deleter.js &amp;">
             <method_context>
                 <method_environment>
                     <envvar name="HOME" value="/root" />
-                    <envvar name="PATH" value="/opt/smartdc/mako/bin:/opt/smartdc/manta-garbage-collector/node/bin:/opt/local/bin:/opt/local/sbin:/usr/sbin:/usr/bin:/sbin" />
+                    <envvar name="PATH" value="/opt/smartdc/mako/bin:/opt/local/bin:/opt/local/sbin:/usr/sbin:/usr/bin:/sbin" />
                 </method_environment>
             </method_context>
         </exec_method>
@@ -33,7 +33,7 @@
 
         <template>
             <common_name>
-                <loctext xml:lang="C">Manta Garbage Collector</loctext>
+                <loctext xml:lang="C">Manta Garbage Deleter</loctext>
             </common_name>
         </template>
 
