@@ -5,7 +5,7 @@
 -->
 
 <!--
-    Copyright (c) 2018, Joyent, Inc.
+    Copyright 2019 Joyent, Inc.
 -->
 
 # manta-mako
@@ -19,7 +19,19 @@ objects.  The zone that stores objects is also known as a "storage" zone.
 [Nginx](http://nginx.org/) is the server that actually puts and gets the objects
 to/from disk.
 
-# Repository
+## Active Branches
+
+There are currently two active branches of this repository, for the two
+active major versions of Manta. See the [mantav2 overview
+document](https://github.com/joyent/manta/blob/master/docs/mantav2.md) for
+details on major Manta versions.
+
+- [`master`](../../tree/master/) - For development of mantav2, the latest
+  version of Manta. This is the version used by Triton.
+- [`mantav1`](../../tree/mantav1/) - For development of mantav1, the long
+  term support maintenance version of Manta.
+
+## Repository
 
     bin/            Commands available in $PATH, including commands that work
                     in conjunction with Manta Garbage Collection
@@ -37,7 +49,7 @@ to/from disk.
     package.json    npm module info (holds the project version)
     README.md
 
-# Working with the nginx git submodule
+## Working with the nginx git submodule
 
 mako uses [Joyent's fork of nginx](https://github.com/joyent/nginx)
 which has been modified to support some additional features:
