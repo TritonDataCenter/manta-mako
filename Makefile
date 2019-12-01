@@ -63,7 +63,7 @@ AGENTS = amon config minnow registrar
 # Force minnow to be built from this specific branch, needed
 # because mantav1 should not mix/match with mantav2 changes
 #
-$(MINNOW_PREBUILT_TARGETS): AGENT_PREBUILT_BRANCH=MANTA-4776-mv1
+$(MINNOW_PREBUILT_TARGETS): AGENT_PREBUILT_BRANCH=mantav1
 
 
 ENGBLD_USE_BUILDIMAGE	= true
