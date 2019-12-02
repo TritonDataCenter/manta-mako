@@ -54,17 +54,10 @@ NODE_PREBUILT_IMAGE	= 1ad363ec-3b83-11e8-8521-2f68a4a34d5d
 # Stuff used for buildimage
 #
 BASE_IMAGE_UUID		= b6ea7cb4-6b90-48c0-99e7-1d34c2895248
-BUILDIMAGE_NAME		= mantav1-storage
+BUILDIMAGE_NAME		= mantav2-storage
 BUILDIMAGE_DESC		= Manta Storage
 BUILDIMAGE_PKGSRC	= pcre-8.42 findutils-4.6.0nb1 gawk-4.1.4nb1
 AGENTS = amon config minnow registrar
-
-#
-# Force minnow to be built from this specific branch, needed
-# because mantav1 should not mix/match with mantav2 changes
-#
-$(MINNOW_PREBUILT_TARGETS): AGENT_PREBUILT_BRANCH=mantav1
-
 
 ENGBLD_USE_BUILDIMAGE	= true
 ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)
