@@ -101,7 +101,7 @@ NPM_ENV          = MAKE_OVERRIDES="CTFCONVERT=/bin/true CTFMERGE=/bin/true"
 # Repo-specific targets
 #
 .PHONY: all
-all: $(NODE_EXEC) $(NGINX_EXEC) $(TAPE) $(REPO_DEPS) scripts
+all: $(NODE_EXEC) $(NGINX_EXEC) $(TAPE) $(REPO_DEPS) scripts build-rollup
 	$(NPM) install
 $(TAPE): | $(NPM_EXEC)
 	$(NPM) install
@@ -153,7 +153,8 @@ release: all deps docs $(SMF_MANIFESTS) check-nginx
 
 .PHONY: build-rollup
 build-boray:
-	$(CARGO) build --release
+	(cd bin/mako_rollup && $(CARGO) build --release)
+	find bin/mako_rollup -ls
 
 .PHONY: publish
 publish: release
