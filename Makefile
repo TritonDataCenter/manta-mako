@@ -29,9 +29,6 @@ TAPE		:= ./node_modules/.bin/tape
 NPM		:= npm
 NGXSYMCHECK	= tools/ngx_symcheck
 
-# Need Rust for mako_rollup
-RUST_CODE = 1
-
 #
 # Files
 #
