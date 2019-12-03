@@ -9,7 +9,7 @@
                 "assert-plus": "1.0.0",
                 "bunyan": "1.8.12",
                 "carrier": "0.1.7",
-                "manta": "2.0.7",
+                "manta": "5.2.1",
                 "posix-getopt": "1.0.0",
                 "restify": "4.3.4",
                 "triton-metrics": "1.0.2",
