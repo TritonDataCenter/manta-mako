@@ -60,7 +60,7 @@ NODE_PREBUILT_IMAGE	= fbda7200-57e7-11e9-bb3a-8b0b548fcc37
 BASE_IMAGE_UUID		= cbf116a0-43a5-447c-ad8c-8fa57787351c
 BUILDIMAGE_NAME		= manta-storage
 BUILDIMAGE_DESC		= Manta Storage
-BUILDIMAGE_PKGSRC	= pcre-8.42 findutils-4.6.0nb2 gawk-4.2.1
+BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-4.2.1
 AGENTS = amon config minnow registrar
 
 ENGBLD_USE_BUILDIMAGE	= true
