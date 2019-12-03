@@ -50,14 +50,14 @@ RUST_PREBUILT_VERSION = 1.33.0
 NAME			= mako
 NODE_PREBUILT_VERSION	= v8.16.1
 NODE_PREBUILT_TAG	= zone64
-# minimal-64 19.2.0
-NODE_PREBUILT_IMAGE	= 7f4d80b4-9d70-11e9-9388-6b41834cbeeb
+# minimal-64 19.1.0
+NODE_PREBUILT_IMAGE	= cbf116a0-43a5-447c-ad8c-8fa57787351c
 
 #
 # Stuff used for buildimage
 #
 # triton-origin-x86_64-19.2.0
-BASE_IMAGE_UUID		= a0d5f456-ba0f-4b13-bfdc-5e9323837ca7
+BASE_IMAGE_UUID		= cbf116a0-43a5-447c-ad8c-8fa57787351c
 BUILDIMAGE_NAME		= manta-storage
 BUILDIMAGE_DESC		= Manta Storage
 BUILDIMAGE_PKGSRC	= pcre-8.42 findutils-4.6.0nb2 gawk-4.2.1
