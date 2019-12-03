@@ -29,6 +29,9 @@ TAPE		:= ./node_modules/.bin/tape
 NPM		:= npm
 NGXSYMCHECK	= tools/ngx_symcheck
 
+# Need Rust for mako_rollup
+RUST_CODE = 1
+
 #
 # Files
 #
@@ -42,17 +45,22 @@ SMF_MANIFESTS	= smf/manifests/nginx.xml
 #
 # Variables
 #
+
+# TODO: Use this to download or verify install of expected rust version
+# NOTE: copied from what manta-buckets-mdapi uses
+RUST_PREBUILT_VERSION = 1.33.0
+
 NAME			= mako
 NODE_PREBUILT_VERSION	= v8.16.1
 NODE_PREBUILT_TAG	= zone64
-# minimal-multiarch 18.4.0
-NODE_PREBUILT_IMAGE	= c2c31b00-1d60-11e9-9a77-ff9f06554b0f
+# minimal-64 19.2.0
+NODE_PREBUILT_IMAGE	= 7f4d80b4-9d70-11e9-9388-6b41834cbeeb
 
 #
 # Stuff used for buildimage
 #
-# triton-origin-x86_64-18.4.0
-BASE_IMAGE_UUID		= a9368831-958e-432d-a031-f8ce6768d190
+# triton-origin-x86_64-19.2.0
+BASE_IMAGE_UUID		= a0d5f456-ba0f-4b13-bfdc-5e9323837ca7
 BUILDIMAGE_NAME		= manta-storage
 BUILDIMAGE_DESC		= Manta Storage
 BUILDIMAGE_PKGSRC	= pcre-8.42 findutils-4.6.0nb2 gawk-4.2.1
@@ -142,6 +150,10 @@ release: all deps docs $(SMF_MANIFESTS) check-nginx
 	rm $(RELSTAGEDIR)/root/opt/smartdc/mako/nginx/conf/*.default
 	(cd $(RELSTAGEDIR) && $(TAR) -I pigz -cf $(ROOT)/$(RELEASE_TARBALL) root site)
 	@rm -rf $(RELSTAGEDIR)
+
+.PHONY: build-rollup
+build-boray:
+	$(CARGO) build --release
 
 .PHONY: publish
 publish: release
