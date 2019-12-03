@@ -51,7 +51,7 @@ NAME			= mako
 NODE_PREBUILT_VERSION	= v8.16.1
 NODE_PREBUILT_TAG	= zone64
 # minimal-64 19.1.0
-NODE_PREBUILT_IMAGE	= cbf116a0-43a5-447c-ad8c-8fa57787351c
+NODE_PREBUILT_IMAGE	= fbda7200-57e7-11e9-bb3a-8b0b548fcc37
 
 #
 # Stuff used for buildimage
