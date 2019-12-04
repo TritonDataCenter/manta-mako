@@ -149,7 +149,7 @@ release: all deps docs $(SMF_MANIFESTS) check-nginx
 	@rm -rf $(RELSTAGEDIR)
 
 .PHONY: build-rollup
-build-boray:
+build-rollup:
 	(cd bin/mako_rollup && $(CARGO) build --release)
 	find bin/mako_rollup -ls
 
