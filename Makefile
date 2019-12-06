@@ -140,6 +140,9 @@ release: all deps docs $(SMF_MANIFESTS) check-nginx
 	    $(ROOT)/sapi_manifests \
 	    $(ROOT)/smf \
 	    $(RELSTAGEDIR)/root/opt/smartdc/mako/
+	cp $(ROOT)/mako_rollup/target/release/mako_rollup \
+	    $(RELSTAGEDIR)/root/opt/smartdc/mako/bin/mako_rollup
+	chmod 755 $(RELSTAGEDIR)/root/opt/smartdc/mako/bin/mako_rollup
 	cp -r $(ROOT)/build/scripts $(RELSTAGEDIR)/root/opt/smartdc/mako/boot
 	ln -s /opt/smartdc/mako/boot/setup.sh \
 	    $(RELSTAGEDIR)/root/opt/smartdc/boot/setup.sh
@@ -150,8 +153,8 @@ release: all deps docs $(SMF_MANIFESTS) check-nginx
 
 .PHONY: build-rollup
 build-rollup:
-	(cd bin/mako_rollup && $(CARGO) build --release)
-	find bin/mako_rollup -ls
+	(cd mako_rollup && $(CARGO) build --release)
+	find mako_rollup -ls
 
 .PHONY: publish
 publish: release
