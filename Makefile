@@ -37,26 +37,30 @@ BASH_FILES	= bin/manta-mako-adm $(NGXSYMCHECK)
 JS_FILES	:= $(shell find lib test bin -name '*.js')
 JSL_CONF_NODE	= tools/jsl.node.conf
 JSL_FILES_NODE	= $(JS_FILES)
-JSSTYLE_FILES	= $(JS_FILES)
-JSSTYLE_FLAGS	= -f tools/jsstyle.conf
 SMF_MANIFESTS	= smf/manifests/nginx.xml
 
 #
 # Variables
 #
+
+# TODO: Use this to download or verify install of expected rust version
+# NOTE: copied from what manta-buckets-mdapi uses
+RUST_PREBUILT_VERSION = 1.33.0
+
 NAME			= mako
-NODE_PREBUILT_VERSION	= v0.10.48
-NODE_PREBUILT_TAG	= zone
-# minimal-multiarch 18.1.0
-NODE_PREBUILT_IMAGE	= 1ad363ec-3b83-11e8-8521-2f68a4a34d5d
+NODE_PREBUILT_VERSION	= v8.16.1
+NODE_PREBUILT_TAG	= zone64
+# minimal-64 19.1.0
+NODE_PREBUILT_IMAGE	= fbda7200-57e7-11e9-bb3a-8b0b548fcc37
 
 #
 # Stuff used for buildimage
 #
-BASE_IMAGE_UUID		= b6ea7cb4-6b90-48c0-99e7-1d34c2895248
-BUILDIMAGE_NAME		= mantav2-storage
+# triton-origin-x86_64-19.1.0
+BASE_IMAGE_UUID		= cbf116a0-43a5-447c-ad8c-8fa57787351c
+BUILDIMAGE_NAME		= manta-storage
 BUILDIMAGE_DESC		= Manta Storage
-BUILDIMAGE_PKGSRC	= pcre-8.42 findutils-4.6.0nb1 gawk-4.1.4nb1
+BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-4.2.1
 AGENTS = amon config minnow registrar
 
 ENGBLD_USE_BUILDIMAGE	= true
@@ -94,7 +98,7 @@ NPM_ENV          = MAKE_OVERRIDES="CTFCONVERT=/bin/true CTFMERGE=/bin/true"
 # Repo-specific targets
 #
 .PHONY: all
-all: $(NODE_EXEC) $(NGINX_EXEC) $(TAPE) $(REPO_DEPS) scripts
+all: $(NODE_EXEC) $(NGINX_EXEC) $(TAPE) $(REPO_DEPS) scripts build-rollup
 	$(NPM) install
 $(TAPE): | $(NPM_EXEC)
 	$(NPM) install
@@ -136,6 +140,9 @@ release: all deps docs $(SMF_MANIFESTS) check-nginx
 	    $(ROOT)/sapi_manifests \
 	    $(ROOT)/smf \
 	    $(RELSTAGEDIR)/root/opt/smartdc/mako/
+	cp $(ROOT)/mako_rollup/target/release/mako_rollup \
+	    $(RELSTAGEDIR)/root/opt/smartdc/mako/bin/mako_rollup
+	chmod 755 $(RELSTAGEDIR)/root/opt/smartdc/mako/bin/mako_rollup
 	cp -r $(ROOT)/build/scripts $(RELSTAGEDIR)/root/opt/smartdc/mako/boot
 	ln -s /opt/smartdc/mako/boot/setup.sh \
 	    $(RELSTAGEDIR)/root/opt/smartdc/boot/setup.sh
@@ -143,6 +150,11 @@ release: all deps docs $(SMF_MANIFESTS) check-nginx
 	rm $(RELSTAGEDIR)/root/opt/smartdc/mako/nginx/conf/*.default
 	(cd $(RELSTAGEDIR) && $(TAR) -I pigz -cf $(ROOT)/$(RELEASE_TARBALL) root site)
 	@rm -rf $(RELSTAGEDIR)
+
+.PHONY: build-rollup
+build-rollup:
+	(cd mako_rollup && $(CARGO) build --release)
+	find mako_rollup -ls
 
 .PHONY: publish
 publish: release
