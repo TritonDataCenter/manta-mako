@@ -1,0 +1,8 @@
+[package]
+name = "mako_rollup"
+version = "0.1.0"
+authors = ["Joyent"]
+edition = "2018"
+
+[dependencies]
+walkdir = "2"
