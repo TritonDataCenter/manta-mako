@@ -67,7 +67,6 @@ AGENTS = amon config minnow registrar
 # before falling back $(BRANCH), 'master', etc.
 AGENT_PREBUILT_AGENT_BRANCH     = rebalancer-build
 AMON_PREBUILT_AGENT_ENV = ENGBLD_PATH=$(TOP)/build/agent-python
-MINNOW_PREBUILT_AGENT_ENV = RESTDOWN=$(TOP)/build/agent-python/restdown
 
 ENGBLD_USE_BUILDIMAGE	= true
 #ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)
@@ -105,7 +104,7 @@ NPM_ENV          = MAKE_OVERRIDES="CTFCONVERT=/bin/true CTFMERGE=/bin/true"
 # Repo-specific targets
 #
 .PHONY: all
-all: $(NODE_EXEC) $(NGINX_EXEC) $(TAPE) $(REPO_DEPS) scripts build-rollup restdown-wrapper
+all: $(NODE_EXEC) $(NGINX_EXEC) $(TAPE) $(REPO_DEPS) scripts build-rollup
 	$(NPM) install
 $(TAPE): | $(NPM_EXEC)
 	$(NPM) install
@@ -125,20 +124,6 @@ test: $(TAPE)
 scripts: deps/manta-scripts/.git
 	mkdir -p $(BUILD)/scripts
 	cp deps/manta-scripts/*.sh $(BUILD)/scripts
-
-#
-# Some of the agents use restdown during the build, but since
-# restdown requires python2, and python on 19.2.0 is python3
-# by default, a wrapper is required. We pass this to the
-# agents with *_PREBUILT_AGENT_ENV
-#
-restdown-wrapper:
-	mkdir -p $(TOP)/build/agent-python
-	rm -f $(TOP)/build/agent-python/restdown
-	echo \
-	    $(TOP)/build/agent-python/python deps/restdown/bin/restdown $$\* \
-	    > $(TOP)/build/agent-python/restdown
-	chmod 755 $(TOP)/build/agent-python/restdown
 
 .PHONY: check-nginx
 check-nginx: $(NGINX_EXEC)
