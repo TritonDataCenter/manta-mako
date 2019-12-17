@@ -61,15 +61,15 @@ BASE_IMAGE_UUID		= a0d5f456-ba0f-4b13-bfdc-5e9323837ca7
 BUILDIMAGE_NAME		= manta-storage
 BUILDIMAGE_DESC		= Manta Storage
 BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-5.0.0
-AGENTS = amon config minnow registrar
+AGENTS = amon config minnow registrar rebalancer
 
 # XXX timf for now, make agent builds look for a 'rebalancer-build' branch
 # before falling back $(BRANCH), 'master', etc.
-AGENT_PREBUILT_AGENT_BRANCH     = rebalancer-build
+AGENT_PREBUILT_AGENT_BRANCH     = rebalancer-agent
 AMON_PREBUILT_AGENT_ENV = ENGBLD_PATH=$(TOP)/build/agent-python
 
 ENGBLD_USE_BUILDIMAGE	= true
-#ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)
+ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)
 include ./deps/eng/tools/mk/Makefile.defs
 TOP ?= $(error Unable to access eng.git submodule Makefiles.)
 
@@ -77,7 +77,6 @@ ifeq ($(shell uname -s),SunOS)
 	include ./deps/eng/tools/mk/Makefile.node_prebuilt.defs
 	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.defs
 	include ./deps/eng/tools/mk/Makefile.smf.defs
-release: python2-symlink
 else
 	NPM=npm
 	NODE=node
