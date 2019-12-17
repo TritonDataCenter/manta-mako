@@ -45,26 +45,32 @@ SMF_MANIFESTS	= smf/manifests/nginx.xml
 
 # TODO: Use this to download or verify install of expected rust version
 # NOTE: copied from what manta-buckets-mdapi uses
-RUST_PREBUILT_VERSION = 1.33.0
+RUST_PREBUILT_VERSION = 1.35.0
 
 NAME			= mako
 NODE_PREBUILT_VERSION	= v8.16.1
 NODE_PREBUILT_TAG	= zone64
-# minimal-64 19.1.0
-NODE_PREBUILT_IMAGE	= fbda7200-57e7-11e9-bb3a-8b0b548fcc37
+# minimal-64 19.2.0
+NODE_PREBUILT_IMAGE	= 7f4d80b4-9d70-11e9-9388-6b41834cbeeb
 
 #
 # Stuff used for buildimage
 #
-# triton-origin-x86_64-19.1.0
-BASE_IMAGE_UUID		= cbf116a0-43a5-447c-ad8c-8fa57787351c
+# triton-origin-x86_64-19.2.0
+BASE_IMAGE_UUID		= a0d5f456-ba0f-4b13-bfdc-5e9323837ca7
 BUILDIMAGE_NAME		= manta-storage
 BUILDIMAGE_DESC		= Manta Storage
-BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-4.2.1
+BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-5.0.0
 AGENTS = amon config minnow registrar
 
+# XXX timf for now, make agent builds look for a 'rebalancer-build' branch
+# before falling back $(BRANCH), 'master', etc.
+AGENT_PREBUILT_AGENT_BRANCH     = rebalancer-build
+AMON_PREBUILT_AGENT_ENV = ENGBLD_PATH=$(TOP)/build/agent-python
+MINNOW_PREBUILT_AGENT_ENV = RESTDOWN=$(TOP)/build/agent-python/restdown
+
 ENGBLD_USE_BUILDIMAGE	= true
-ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)
+#ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)
 include ./deps/eng/tools/mk/Makefile.defs
 TOP ?= $(error Unable to access eng.git submodule Makefiles.)
 
@@ -72,6 +78,7 @@ ifeq ($(shell uname -s),SunOS)
 	include ./deps/eng/tools/mk/Makefile.node_prebuilt.defs
 	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.defs
 	include ./deps/eng/tools/mk/Makefile.smf.defs
+release: python2-symlink
 else
 	NPM=npm
 	NODE=node
@@ -98,7 +105,7 @@ NPM_ENV          = MAKE_OVERRIDES="CTFCONVERT=/bin/true CTFMERGE=/bin/true"
 # Repo-specific targets
 #
 .PHONY: all
-all: $(NODE_EXEC) $(NGINX_EXEC) $(TAPE) $(REPO_DEPS) scripts build-rollup
+all: $(NODE_EXEC) $(NGINX_EXEC) $(TAPE) $(REPO_DEPS) scripts build-rollup restdown-wrapper
 	$(NPM) install
 $(TAPE): | $(NPM_EXEC)
 	$(NPM) install
@@ -118,6 +125,20 @@ test: $(TAPE)
 scripts: deps/manta-scripts/.git
 	mkdir -p $(BUILD)/scripts
 	cp deps/manta-scripts/*.sh $(BUILD)/scripts
+
+#
+# Some of the agents use restdown during the build, but since
+# restdown requires python2, and python on 19.2.0 is python3
+# by default, a wrapper is required. We pass this to the
+# agents with *_PREBUILT_AGENT_ENV
+#
+restdown-wrapper:
+	mkdir -p $(TOP)/build/agent-python
+	rm -f $(TOP)/build/agent-python/restdown
+	echo \
+	    $(TOP)/build/agent-python/python deps/restdown/bin/restdown $$\* \
+	    > $(TOP)/build/agent-python/restdown
+	chmod 755 $(TOP)/build/agent-python/restdown
 
 .PHONY: check-nginx
 check-nginx: $(NGINX_EXEC)
