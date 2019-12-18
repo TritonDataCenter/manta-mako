@@ -66,10 +66,6 @@ AGENTS = amon config minnow registrar rebalancer
 # XXX timf for now, this gets us the rebalancer agent branch of
 # manta-rebalancer.git
 AGENT_PREBUILT_AGENT_BRANCH     = engbld
-# XXX timf, this allows us to get the sdc-amon change to build with the
-# python2 symlink. Both of these overrides will fallback to master
-# for other agents (config, minnow, registrar)
-AGENT_PREBUILT_BRANCH = rebalancer-build
 
 ENGBLD_USE_BUILDIMAGE	= true
 ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)
