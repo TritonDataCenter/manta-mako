@@ -63,10 +63,13 @@ BUILDIMAGE_DESC		= Manta Storage
 BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-5.0.0
 AGENTS = amon config minnow registrar rebalancer
 
-# XXX timf for now, make agent builds look for a 'rebalancer-build' branch
-# before falling back $(BRANCH), 'master', etc.
-AGENT_PREBUILT_AGENT_BRANCH     = rebalancer-agent
-AMON_PREBUILT_AGENT_ENV = ENGBLD_PATH=$(TOP)/build/agent-python
+# XXX timf for now, this gets us the rebalancer agent branch of
+# manta-rebalancer.git
+AGENT_PREBUILT_AGENT_BRANCH     = engbld
+# XXX timf, this allows us to get the sdc-amon change to build with the
+# python2 symlink. Both of these overrides will fallback to master
+# for other agents (config, minnow, registrar)
+AGENT_PREBUILT_BRANCH = rebalancer-build
 
 ENGBLD_USE_BUILDIMAGE	= true
 ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)

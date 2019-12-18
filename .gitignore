@@ -9,3 +9,6 @@ cscope.in.out
 cscope.po.out
 cscope.out
 mako-pkg-*tar.gz
+mako_rollup/Cargo.lock
+mako_rollup/target
+
