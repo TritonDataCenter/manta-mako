@@ -135,19 +135,6 @@ function manta_setup_nginx {
 
 
 function manta_setup_rebalancer {
-    # XXX timf: our looking for moray here is a placeholder.
-    # I don't know if it's actually required (suspect not, since
-    # I copied/pasted it from the minnow setup), but if there's
-    # anything else we need to add before rebalancer should
-    # start, this is the place to do it.
-    local storage_moray_shard
-
-    storage_moray_shard=$(json -f ${METADATA} STORAGE_MORAY_SHARD)
-    [[ -n "$storage_moray_shard" ]] || \
-        fatal "Unable to retrieve storage_moray_shard"
-
-    manta_ensure_moray "$storage_moray_shard"
-
     svccfg import /opt/smartdc/rebalancer/smf/manifests/rebalancer-agent.xml
     svcadm enable rebalancer-agent
 
