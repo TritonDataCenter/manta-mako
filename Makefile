@@ -58,7 +58,7 @@ NODE_PREBUILT_IMAGE	= 7f4d80b4-9d70-11e9-9388-6b41834cbeeb
 #
 # triton-origin-x86_64-19.2.0
 BASE_IMAGE_UUID		= a0d5f456-ba0f-4b13-bfdc-5e9323837ca7
-BUILDIMAGE_NAME		= manta-storage
+BUILDIMAGE_NAME		= mantav2-storage
 BUILDIMAGE_DESC		= Manta Storage
 BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-5.0.0
 AGENTS = amon config minnow registrar rebalancer
