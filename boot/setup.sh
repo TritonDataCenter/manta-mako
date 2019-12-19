@@ -134,7 +134,7 @@ function manta_setup_nginx {
 }
 
 
-function manta_setup_rebalancer {
+function manta_setup_rebalancer_agent {
     svccfg import /opt/smartdc/rebalancer-agent/smf/manifests/rebalancer-agent.xml
 
     manta_add_logadm_entry "rebalancer"
@@ -169,7 +169,6 @@ manta_common_presetup
 echo "Adding local manifest directories"
 manta_add_manifest_dir "/opt/smartdc/mako"
 manta_add_manifest_dir "/opt/smartdc/minnow"
-manta_add_manifest_dir "/opt/smartdc/rebalancer-agent"
 
 echo "Updating manta compute id"
 manta_update_compute_id
@@ -189,7 +188,7 @@ echo "Updating crons for garbage collection, etc."
 manta_setup_crons
 
 echo "Updating rebalancer"
-manta_setup_rebalancer
+manta_setup_rebalancer_agent
 
 manta_common_setup_end
 
