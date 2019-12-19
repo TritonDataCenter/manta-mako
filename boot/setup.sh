@@ -136,7 +136,6 @@ function manta_setup_nginx {
 
 function manta_setup_rebalancer {
     svccfg import /opt/smartdc/rebalancer-agent/smf/manifests/rebalancer-agent.xml
-    svcadm enable rebalancer-agent
 
     manta_add_logadm_entry "rebalancer"
 }
