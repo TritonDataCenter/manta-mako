@@ -45,23 +45,23 @@ SMF_MANIFESTS	= smf/manifests/nginx.xml
 
 # TODO: Use this to download or verify install of expected rust version
 # NOTE: copied from what manta-buckets-mdapi uses
-RUST_PREBUILT_VERSION = 1.33.0
+RUST_PREBUILT_VERSION = 1.35.0
 
 NAME			= mako
 NODE_PREBUILT_VERSION	= v8.16.1
 NODE_PREBUILT_TAG	= zone64
-# minimal-64 19.1.0
-NODE_PREBUILT_IMAGE	= fbda7200-57e7-11e9-bb3a-8b0b548fcc37
+# minimal-64 19.2.0
+NODE_PREBUILT_IMAGE	= 7f4d80b4-9d70-11e9-9388-6b41834cbeeb
 
 #
 # Stuff used for buildimage
 #
-# triton-origin-x86_64-19.1.0
-BASE_IMAGE_UUID		= cbf116a0-43a5-447c-ad8c-8fa57787351c
+# triton-origin-x86_64-19.2.0
+BASE_IMAGE_UUID		= a0d5f456-ba0f-4b13-bfdc-5e9323837ca7
 BUILDIMAGE_NAME		= manta-storage
 BUILDIMAGE_DESC		= Manta Storage
-BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-4.2.1
-AGENTS = amon config minnow registrar
+BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-5.0.0
+AGENTS = amon config minnow registrar rebalancer
 
 ENGBLD_USE_BUILDIMAGE	= true
 ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)

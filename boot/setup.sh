@@ -134,6 +134,13 @@ function manta_setup_nginx {
 }
 
 
+function manta_setup_rebalancer_agent {
+    svccfg import /opt/smartdc/rebalancer-agent/smf/manifests/rebalancer-agent.xml
+
+    manta_add_logadm_entry "rebalancer"
+}
+
+
 function manta_setup_crons {
     local crontab=/tmp/.manta_mako_cron
     crontab -l > $crontab
@@ -179,6 +186,9 @@ manta_setup_nginx
 
 echo "Updating crons for garbage collection, etc."
 manta_setup_crons
+
+echo "Updating rebalancer"
+manta_setup_rebalancer_agent
 
 manta_common_setup_end
 
