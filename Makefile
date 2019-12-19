@@ -63,10 +63,6 @@ BUILDIMAGE_DESC		= Manta Storage
 BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-5.0.0
 AGENTS = amon config minnow registrar rebalancer
 
-# XXX timf for now, this gets us the rebalancer agent branch of
-# manta-rebalancer.git
-AGENT_PREBUILT_AGENT_BRANCH     = engbld
-
 ENGBLD_USE_BUILDIMAGE	= true
 ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)
 include ./deps/eng/tools/mk/Makefile.defs
