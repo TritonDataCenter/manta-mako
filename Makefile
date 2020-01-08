@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright 2019 Joyent, Inc.
+# Copyright 2020 Joyent, Inc.
 #
 
 #
@@ -34,7 +34,7 @@ NGXSYMCHECK	= tools/ngx_symcheck
 #
 DOC_FILES	=
 BASH_FILES	= bin/manta-mako-adm $(NGXSYMCHECK)
-JS_FILES	:= $(shell find test bin -name '*.js')
+JS_FILES	:= $(shell find bin lib test -name '*.js')
 JSL_CONF_NODE	= tools/jsl.node.conf
 JSL_FILES_NODE	= $(JS_FILES)
 SMF_MANIFESTS	= smf/manifests/nginx.xml
@@ -135,6 +135,7 @@ release: all deps docs $(SMF_MANIFESTS) check-nginx
 	    $(ROOT)/boot \
 	    $(ROOT)/build \
 	    $(ROOT)/build/nginx \
+	    $(ROOT)/lib \
 	    $(ROOT)/node_modules \
 	    $(ROOT)/sapi_manifests \
 	    $(ROOT)/smf \
