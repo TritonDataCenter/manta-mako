@@ -12,7 +12,7 @@
                 "manta": "5.2.1",
                 "posix-getopt": "1.0.0",
                 "restify": "4.3.4",
-                "tap": "14.2.2",
+                "@smaller/tap": "11.1.4-1.0.0",
                 "triton-metrics": "1.0.2",
                 "vasync": "2.2.0"
         },
