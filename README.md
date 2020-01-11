@@ -5,7 +5,7 @@
 -->
 
 <!--
-    Copyright 2019 Joyent, Inc.
+    Copyright 2020 Joyent, Inc.
 -->
 
 # manta-mako
@@ -57,7 +57,6 @@ which has been modified to support some additional features:
 * Calculates the md5 checksum of the streamed body and reports it.
 * Ensures that all renames are atomic in the filesystem (proper use of
   fsync(2)).
-* Adds support for the multipart upload commit operation.
 
 To understand how the nginx repository is managed and how we cut
 releases for use in mako, please read the
@@ -108,9 +107,6 @@ server at `http://1.2.3.4:8080/`.
 
     MAKO_WORKER_CONNECTIONS    Maximum number of connections per nginx worker
                                process
-
-    MAKO_THREAD_POOL_SIZE      Number of threads to use for multi-part upload
-                               thread pool
 
     MAKO_PROCESS_MANIFEST      Boolean value which when set, enables the post
                                processing of a mako manifest to produce a
