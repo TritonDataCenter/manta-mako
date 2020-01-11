@@ -155,13 +155,13 @@ test('100s of small files', function (t) {
         for (var ii = 0; ii < 200; ii++)
                 files.push(uuid());
 
-        async.series([ function (callback) {
-                async.forEach(files, function (f, subcb) {
+        vasync.pipeline({funcs: [ function (_, callback) {
+                vasync.forEach({inputs: files, func: function (f, subcb) {
                         createFile(path.join(TEST_DIR, f),
                             131072 * 10, function (suberr) {
                                 return (subcb(suberr));
                         });
-                }, function (suberr) {
+                }}, function (suberr) {
                         if (suberr) {
                                 t.ok(false, suberr.message);
                                 t.end();
@@ -169,8 +169,8 @@ test('100s of small files', function (t) {
                         }
                         return (callback(null));
                 });
-        }, function (callback) {
-                async.forEach(files, function (f, subcb) {
+        }, function (_, callback) {
+                vasync.forEach({inputs: files, func: function (f, subcb) {
                         options.method = 'PUT';
                         options.path = '/' + f;
 
@@ -193,10 +193,10 @@ test('100s of small files', function (t) {
                                 req.write(contents);
                                 req.end();
                         });
-                }, function (suberr) {
+                }}, function (suberr) {
                         return (callback(null));
                 });
-        }], function (suberr, results) {
+        }]}, function (suberr, results) {
                 t.end();
         });
 });
