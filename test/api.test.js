@@ -5,30 +5,30 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 /* Test the Mako API endpoints */
 
-var test = require('tap').test;
-
-var async = require('async');
 var cp = require('child_process');
+var fmt = require('util').format;
 var fs = require('fs');
 var http = require('http');
 var path = require('path');
-var uuid = require('node-uuid');
-var extsprintf = require('extsprintf');
-var sprintf = extsprintf.sprintf;
+
+var uuid = require('uuid/v4');
+var vasync = require('vasync');
+
+var test = require('@smaller/tap').test;
 
 var TEST_DIR = '/var/tmp/test.mako.' + process.pid;
-var filename = uuid.v4();
-var file = path.join(TEST_DIR, filename);
+var FILENAME = uuid();
+var FILE = path.join(TEST_DIR, FILENAME);
 
 var options = {
         host: 'localhost',
         port: 80,
-        path: '/' + filename
+        path: '/' + FILENAME
 };
 
 var assertFilesSame = function (first, second, t, callback) {
@@ -51,7 +51,7 @@ var createFile = function (name, size, callback) {
 
 var getNonexistentObject = function (t) {
         options.method = 'GET';
-        options.path = '/' + filename;
+        options.path = '/' + FILENAME;
 
         var req = http.request(options, function (res) {
                 console.log('STATUS: ' + res.statusCode);
@@ -78,7 +78,7 @@ test('setup', function (t) {
         if (process.env['MAKO_PORT']) {
                 port = parseInt(process.env['MAKO_PORT'], 10);
                 if (isNaN(port)) {
-                        process.stderr.write(sprintf('failed to parse port: ' +
+                        process.stderr.write(fmt('failed to parse port: ' +
                             '%d: using default: %d\n', process.env['MAKO_PORT'],
                             options.port));
                 } else {
@@ -88,7 +88,7 @@ test('setup', function (t) {
 
 
         fs.mkdirSync(TEST_DIR);
-        createFile(file, 10 * 1024 * 1024, function () {
+        createFile(FILE, 10 * 1024 * 1024, function () {
                 t.end();
         });
 });
@@ -99,7 +99,7 @@ test('get nonexistent object', function (t) {
 
 test('put 10 MiB object', function (t) {
         options.method = 'PUT';
-        options.path = '/' + filename;
+        options.path = '/' + FILENAME;
 
         var req = http.request(options, function (res) {
                 console.log('STATUS: ' + res.statusCode);
@@ -115,7 +115,7 @@ test('put 10 MiB object', function (t) {
                 t.end();
         });
 
-        fs.readFile(file, function (err, contents) {
+        fs.readFile(FILE, function (err, contents) {
                 req.write(contents);
                 req.end();
         });
@@ -123,7 +123,7 @@ test('put 10 MiB object', function (t) {
 
 test('get 10 MiB object', function (t) {
         options.method = 'GET';
-        options.path = '/' + filename;
+        options.path = '/' + FILENAME;
 
         var req = http.request(options, function (res) {
                 console.log('STATUS: ' + res.statusCode);
@@ -131,11 +131,11 @@ test('get 10 MiB object', function (t) {
 
                 t.equal(res.statusCode, 200);
 
-                var wstream = fs.createWriteStream(file + '.new');
+                var wstream = fs.createWriteStream(FILE + '.new');
                 res.pipe(wstream);
 
                 res.on('end', function () {
-                        assertFilesSame(file, file + '.new', t,
+                        assertFilesSame(FILE, FILE + '.new', t,
                             function () {
                                 t.end();
                         });
@@ -153,7 +153,7 @@ test('get 10 MiB object', function (t) {
 test('100s of small files', function (t) {
         var files = [];
         for (var ii = 0; ii < 200; ii++)
-                files.push(uuid.v4());
+                files.push(uuid());
 
         async.series([ function (callback) {
                 async.forEach(files, function (f, subcb) {
