@@ -156,7 +156,7 @@ test('100s of small files', function (t) {
                 files.push(uuid());
 
         vasync.pipeline({funcs: [ function (_, callback) {
-                vasync.forEach({inputs: files, func: function (f, subcb) {
+                vasync.forEachPipeline({inputs: files, func: function (f, subcb) {
                         createFile(path.join(TEST_DIR, f),
                             131072 * 10, function (suberr) {
                                 return (subcb(suberr));
@@ -170,7 +170,7 @@ test('100s of small files', function (t) {
                         return (callback(null));
                 });
         }, function (_, callback) {
-                vasync.forEach({inputs: files, func: function (f, subcb) {
+                vasync.forEachPipeline({inputs: files, func: function (f, subcb) {
                         options.method = 'PUT';
                         options.path = '/' + f;
 
