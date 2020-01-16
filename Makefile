@@ -139,6 +139,7 @@ release: all deps docs $(SMF_MANIFESTS) check-nginx
 	    $(ROOT)/node_modules \
 	    $(ROOT)/sapi_manifests \
 	    $(ROOT)/smf \
+	    $(ROOT)/test \
 	    $(RELSTAGEDIR)/root/opt/smartdc/mako/
 	cp $(ROOT)/mako_rollup/target/release/mako_rollup \
 	    $(RELSTAGEDIR)/root/opt/smartdc/mako/bin/mako_rollup

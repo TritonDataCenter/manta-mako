@@ -12,7 +12,8 @@
                 "@smaller/tap": "11.1.4-1.0.0",
                 "triton-metrics": "1.0.2",
                 "uuid": "3.3.3",
-                "vasync": "2.2.0"
+                "vasync": "2.2.0",
+                "verror": "1.10.0"
         },
         "sdcDependencies": {
                 "config-agent": ">=1.2.0"
