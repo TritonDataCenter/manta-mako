@@ -1,0 +1,59 @@
+# kthxbai config file (https://github.com/trentm/node-kthxbai)
+
+# +pragma: rm-self
+
+# Default patterns
+**/AUTHORS
+**/CONTRIBUTORS
+**/README*
+**/Readme*
+**/readme*
+**/TODO*
+**/CHANGES.md
+**/History.md
+**/example
+**/examples
+**/samples
+**/test
+**/tests
+**/tst
+**/doc
+**/docs
+**/man
+**/.travis.yml
+
+# Custom patterns
+
+# Nobody needs your test coverage report in production
+**/events-to-array/coverage
+**/.nyc_output
+
+# dtrace-provider
+**/dtrace-provider/build/{config.gypi,*.target.mk,gyp-flock-tool,binding.Makefile}
+**/dtrace-provider/build/Release/{.deps,obj.target,linker.lock}
+**/dtrace-provider/!(build|package.json|dtrace-provider.js|LICENSE)
+**/dtrace-provider/package.json.rej
+
+# We don't even use yarn here.
+**/yarn.lock
+
+# Nor do we use jsstyle or jsl or jshint from npm modules
+**/jsl.conf
+**/jsl.node.conf
+**/jsstyle
+**/.jshintrc
+
+# NOPE
+**/.idea
+**/sprintf-js/demo
+**/Makefile
+**/Makefile.deps
+**/Makefile.targ
+
+# Moment is only here because bunyan uses it for the *CLI*. We don't care about
+# that since we're just using the library. Remove the CLI just in case too.
+# At the time of this writing "moment" is 25% of the usage in the node_modules
+# directory.
+**/moment
+**/.bin/bunyan
+**/bin/bunyan

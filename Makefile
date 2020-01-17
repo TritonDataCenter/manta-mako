@@ -127,13 +127,13 @@ prepush: check-nginx
 .PHONY: release
 release: all deps docs $(SMF_MANIFESTS) check-nginx
 	@echo "Building $(RELEASE_TARBALL)"
+	@$(ROOT)/build/node/bin/node ./node_modules/.bin/kthxbai
 	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/mako
 	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/boot
 	@mkdir -p $(RELSTAGEDIR)/site
 	@touch $(RELSTAGEDIR)/site/.do-not-delete-me
 	cp -r $(ROOT)/bin \
 	    $(ROOT)/boot \
-	    $(ROOT)/build \
 	    $(ROOT)/build/nginx \
 	    $(ROOT)/lib \
 	    $(ROOT)/node_modules \
@@ -141,6 +141,15 @@ release: all deps docs $(SMF_MANIFESTS) check-nginx
 	    $(ROOT)/smf \
 	    $(ROOT)/test \
 	    $(RELSTAGEDIR)/root/opt/smartdc/mako/
+	mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/mako/build
+	cp -r $(ROOT)/build/scripts $(RELSTAGEDIR)/root/opt/smartdc/mako/build/
+	mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/bin \
+		$(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/lib
+	cp -r $(ROOT)/build/node/share $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/
+	cp -r $(ROOT)/build/node/lib/dtrace $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/lib/
+	cp -r $(ROOT)/build/node/share $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/
+	cp $(ROOT)/build/node/bin/node $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/bin/
+	chmod 755 $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/bin/node
 	cp $(ROOT)/mako_rollup/target/release/mako_rollup \
 	    $(RELSTAGEDIR)/root/opt/smartdc/mako/bin/mako_rollup
 	chmod 755 $(RELSTAGEDIR)/root/opt/smartdc/mako/bin/mako_rollup
