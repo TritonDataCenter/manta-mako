@@ -306,7 +306,7 @@ test('test deletes actually work', function _testDeletesWork(t) {
 
     mantaDir = path.join(TEST_DIR_MANTA, mantaOwner);
 
-    t.doesNotThrow(fs.mkdirSync(mantaDir),
+    t.doesNotThrow(function () {fs.mkdirSync(mantaDir);},
         'create test /manta/' + mantaOwner + ' dir');
 
     for (idx = 0; idx < 10; idx++) {
@@ -358,6 +358,40 @@ test('stop GarbageDeleter', function _testStopDeleter(t) {
         t.error(err, 'stop GarbageDeleter');
         t.end();
     });
+});
+
+test('check metrics', function _testMetrics(t) {
+    // This just checks that the metrics were set to some approximately
+    // reasonable values.
+
+    var metrics = deleter.metrics;
+
+    function tGreater(metric, compare) {
+        if (typeof(compare) === 'number') {
+            t.ok(metrics[metric] > compare, metric + '(' + metrics[metric] +
+                ') > ' + compare);
+        } else if (typeof(compare) === 'string') {
+            t.ok(metrics[metric] > metrics[compare], metric +
+                '(' + metrics[metric] + ') > ' + compare + '(' +
+                metrics[compare] + ')');
+        } else {
+            t.ok(false, 'bad tGreater type: ' + typeof(compare));
+        }
+    }
+
+    tGreater('instructionFilesProcessed', 0);
+    tGreater('badInstructionFiles', 0);
+    tGreater('instructionFilesProcessed', 'badInstructionFiles');
+    tGreater('instructionLinesProcessed', 0);
+    tGreater('deleteCountTotal', 0);
+    tGreater('deleteTimeTotalSeconds', 0);
+    tGreater('instructionFilesDeleted', 0);
+    tGreater('deleteTimeMinSeconds', 0);
+    tGreater('deleteTimeMaxSeconds', 0);
+    tGreater('deleteTimeMaxSeconds', 'deleteTimeMinSeconds');
+    tGreater('deleteTimeTotalSeconds', 'deleteTimeMaxSeconds');
+
+    t.end();
 });
 
 test('delete testdirs', function _testDeleteTestdirs(t) {
