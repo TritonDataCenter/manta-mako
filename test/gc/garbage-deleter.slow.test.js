@@ -126,7 +126,7 @@ function _testFile(t, options, callback) {
             filename: filename,
             filenameBadPath: filenameBadPath,
             filenamePath: filenamePath,
-            filenameTmpPath: filenameTmpPath,
+            filenameTmpPath: filenameTmpPath
         }, obj);
     });
 
@@ -166,7 +166,7 @@ function _processFileHook(obj) {
 // setup
 
 test('create testdirs', function _testCreateTestdirs(t) {
-    t.doesNotThrow(function _callCreator() {_createTestDirs(t)},
+    t.doesNotThrow(function _callCreator() {_createTestDirs(t);},
         'create test directories');
     t.end();
 });
@@ -395,7 +395,7 @@ test('check metrics', function _testMetrics(t) {
 });
 
 test('delete testdirs', function _testDeleteTestdirs(t) {
-    t.doesNotThrow(function _callDeleter() {_deleteTestDirs(t)},
+    t.doesNotThrow(function _callDeleter() {_deleteTestDirs(t);},
         'delete test directories');
     t.end();
 });
