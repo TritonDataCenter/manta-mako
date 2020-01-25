@@ -10,9 +10,7 @@
 
 /*
  * This file contains tests for the `garbage-deleter` which require actual
- * filesystem calls. Tests which can be run without filesystem calls belong in
- * garbage-deleter.XXX.test.js.
- *
+ * filesystem calls.
  */
 var child_process = require('child_process');
 var EventEmitter = require('events');
@@ -22,16 +20,17 @@ var path = require('path');
 var assert = require('assert-plus');
 var test = require('@smaller/tap').test;
 var uuidv4 = require('uuid/v4');
+var VError = require('verror').VError;
 
 var GarbageDeleter = require('../../lib/garbage-deleter.js');
 
-var BIG_FILE_SIZE = '10M';
 var TEST_DIR = path.join('/tmp', _randomString() + '.garbage-deleter-test');
 var TEST_DIR_BAD_INSTR = path.join(TEST_DIR, 'bad_instructions');
 var TEST_DIR_BAD_INSTR_TMP = path.join(TEST_DIR, 'bad_instructions.tmp');
 var TEST_DIR_INSTR = path.join(TEST_DIR, 'instructions');
 var TEST_DIR_INSTR_TMP = path.join(TEST_DIR, 'instructions.tmp');
 var TEST_DIR_MANTA = path.join(TEST_DIR, 'manta');
+var TEST_STORAGE_ID = '1.testymctestface';
 
 var deleteEmitter = new EventEmitter();
 var deleter;
@@ -122,12 +121,25 @@ function _testFile(t, options, callback) {
         t.equal(obj.filename, filename,
             'saw expected file processed by GarbageDeleter');
 
+        if (obj.filename !== filename) {
+            returnErr = new VError({
+                info: {
+                    actualFilename: obj.filename,
+                    expectedFilename: filename
+                },
+                name: 'WrongFileError'
+            }, 'Saw unexpected file processed by GarbageDeleter');
+        } else if (obj.err) {
+            returnErr = obj.err;
+        }
+
         callback(returnErr, {
             filename: filename,
             filenameBadPath: filenameBadPath,
             filenamePath: filenamePath,
-            filenameTmpPath: filenameTmpPath
-        }, obj);
+            filenameTmpPath: filenameTmpPath,
+            lineCount: obj.lineCount
+        });
     });
 
     fs.writeFile(filenameTmpPath, options.contents, function _onWrite(err) {
@@ -165,6 +177,7 @@ function _processFileHook(obj) {
 
 // setup
 
+
 test('create testdirs', function _testCreateTestdirs(t) {
     t.doesNotThrow(function _callCreator() {_createTestDirs(t);},
         'create test directories');
@@ -174,7 +187,9 @@ test('create testdirs', function _testCreateTestdirs(t) {
 test('create GarbageDeleter', function _testCreateDeleter(t) {
     deleter = new GarbageDeleter({
         badInstructionDir: TEST_DIR_BAD_INSTR,
-        config: {},
+        config: {
+            manta_storage_id: TEST_STORAGE_ID
+        },
         instructionDir: TEST_DIR_INSTR,
         log: logger,
         mantaRoot: TEST_DIR_MANTA,
@@ -202,16 +217,11 @@ function _testNonInstructionFile(t) {
         contents: 'nothing really matters\n',
         desc: 'create file missing .instruction suffix',
         filename: _instrFilename() + '.trash'
-    }, function _onProcessed(err, info, obj) {
-        if (!err) {
-            if (obj.filename === info.filename) {
-                t.equal('MissingInstructionSuffixError', obj.err.name,
-                    'should fail due to file missing .instruction suffix');
-
-                t.ok(fs.existsSync(info.filenameBadPath),
-                    'file should have been moved to bad_instructions dir');
-            }
-        }
+    }, function _onProcessed(err, info) {
+        t.equal(err.name, 'MissingInstructionSuffixError',
+            'should fail due to file missing .instruction suffix');
+        t.ok(fs.existsSync(info.filenameBadPath),
+            'file should have been moved to bad_instructions dir');
         t.end();
     });
 
@@ -224,14 +234,11 @@ test('test empty instruction file', function _testEmptyInstructionFile(t) {
         contents: '',
         desc: 'create empty file',
         filename: _instrFilename()
-    }, function _onProcessed(err, info, obj) {
-        if (!err && obj.filename === info.filename) {
-            t.equal('EmptyFileError', obj.err.name,
-                'should fail due to file being empty');
-
-            t.ok(fs.existsSync(info.filenameBadPath),
-                'file should have been moved to bad_instructions dir');
-        }
+    }, function _onProcessed(err, info) {
+        t.equal(err.name, 'EmptyFileError',
+            'should fail due to file being empty');
+        t.ok(fs.existsSync(info.filenameBadPath),
+            'file should have been moved to bad_instructions dir');
         t.end();
     });
 
@@ -251,16 +258,11 @@ test('test long first instruction', function _testLongFirstInstruction(t) {
         contents: longLine + '\n',
         desc: 'create file with long line',
         filename: _instrFilename()
-    }, function _onProcessed(err, info, obj) {
-        if (!err) {
-            if (obj.filename === info.filename) {
-                t.equal('LineTooLongError', obj.err.name,
-                    'should fail due to line being too long');
-
-                t.ok(fs.existsSync(info.filenameBadPath),
-                    'file should have been moved to bad_instructions dir');
-            }
-        }
+    }, function _onProcessed(err, info) {
+        t.equal(err.name, 'LineTooLongError',
+            'should fail due to line being too long');
+        t.ok(fs.existsSync(info.filenameBadPath),
+            'file should have been moved to bad_instructions dir');
         t.end();
     });
 
@@ -280,16 +282,49 @@ test('test too many instructions', function _testTooManyInstructions(t) {
         contents: lines.join('\n') + '\n',
         desc: 'create file with too many lines',
         filename: _instrFilename()
-    }, function _onProcessed(err, info, obj) {
-        if (!err) {
-            if (obj.filename === info.filename) {
-                t.equal('TooManyLinesError', obj.err.name,
-                    'should fail from too many lines');
+    }, function _onProcessed(err, info) {
+        t.equal(err.name, 'TooManyLinesError',
+            'should fail from too many lines');
+        t.ok(fs.existsSync(info.filenameBadPath),
+            'file should have been moved to bad_instructions dir');
+        t.end();
+    });
 
-                t.ok(fs.existsSync(info.filenameBadPath),
-                    'file should have been moved to bad_instructions dir');
-            }
-        }
+});
+
+// Ensure we handle case where instruction file is too large
+test('test giant instruction file', function _testGiantInstructionFile(t) {
+    // This doesn't need to have correct data in it, we just want the file to be
+    // so big that the reader fails to read it all (since it has a limit).
+    var line = '';
+    var lines = [];
+
+    while (line.length <= deleter.maxLineLength) {
+        line += _randomString();
+    }
+
+    // just push the same line over and over until we've gone over the limit.
+    while (lines.length < (deleter.maxLines + 2)) {
+        lines.push(line.substr(0, deleter.maxLineLength));
+    }
+
+    _testFile(t, {
+        contents: lines.join('\n') + '\n',
+        desc: 'create giant instructions file',
+        filename: _instrFilename()
+    }, function _onProcessed(err, info) {
+        t.equal(err.name, 'TooManyLinesError',
+            'should fail from too many lines');
+
+        // We write too many lines, and we want to make sure that the read
+        // stopped before reading all the lines (this prevents us from getting
+        // killed by enormous files). So we just make sure that the number of
+        // lines we wrote is larger than the number read.
+        t.ok(lines.length > info.lineCount, 'written lines (' + lines.length +
+            ') > read lines (' + info.lineCount + ')');
+
+        t.ok(fs.existsSync(info.filenameBadPath),
+            'file should have been moved to bad_instructions dir');
         t.end();
     });
 
@@ -302,7 +337,6 @@ test('test deletes actually work', function _testDeletesWork(t) {
     var mantaDir;
     var mantaObjects = [];
     var mantaOwner = uuidv4();
-    var storageId = uuidv4();
 
     mantaDir = path.join(TEST_DIR_MANTA, mantaOwner);
 
@@ -318,40 +352,81 @@ test('test deletes actually work', function _testDeletesWork(t) {
         //  fields[0] is our storageId
         //  fields[1] is a uuid (creator UUID)
         //  fields[2] is a uuid (object UUID)
+        //  fields[3] is the metadata shard and is ignored
         //  fields[4] is a number (size)
 
         lines.push([
-            storageId, mantaOwner, mantaObjects[idx], 'blah', Math.floor(Math.random() * 1000)
+            TEST_STORAGE_ID, mantaOwner, mantaObjects[idx], 'blah', Math.floor(Math.random() * 1000)
         ].join('\t'));
-
     }
 
     _testFile(t, {
         contents: lines.join('\n') + '\n',
         desc: 'create file actual deletes',
         filename: _instrFilename()
-    }, function _onProcessed(err, info, obj) {
+    }, function _onProcessed(err, info) {
         t.error(err, 'should be no error deleting files');
-
-        /*
-        console.error('error: ' + JSON.stringify(err));
-        console.error('info: ' + JSON.stringify(info));
-        console.error('obj: ' + JSON.stringify(obj));
-        */
 
         for (idx = 0; idx < 10; idx++) {
             t.notOk(fs.existsSync(path.join(mantaDir, mantaObjects[idx])),
                 mantaObjects[idx] + ' should have been deleted');
         }
 
-        // TODO: file should have been deleted
+        // Instruction file should have been deleted after it was processed.
+        t.notOk(fs.existsSync(info.filenamePath), info.filename +
+            ' should have been deleted');
 
         t.end();
     });
-
 });
 
-// teardown
+// Ensure it works to delete files that don't exist
+test('test deleting non-existent files', function _testDeleteNonExistent(t) {
+    var idx;
+    var lines = [];
+    var mantaDir;
+    var mantaObjects = [];
+    var mantaOwner = uuidv4();
+
+    mantaDir = path.join(TEST_DIR_MANTA, mantaOwner);
+
+    // We'll create the dir but leave it empty
+    t.doesNotThrow(function () {fs.mkdirSync(mantaDir);},
+        'create test /manta/' + mantaOwner + ' dir');
+
+    for (idx = 0; idx < 5; idx++) {
+        mantaObjects.push(uuidv4());
+
+        //  fields[0] is our storageId
+        //  fields[1] is a uuid (creator UUID)
+        //  fields[2] is a uuid (object UUID)
+        //  fields[3] is the metadata shard and is ignored
+        //  fields[4] is a number (size)
+
+        lines.push([
+            TEST_STORAGE_ID, mantaOwner, mantaObjects[idx], 'blah', Math.floor(Math.random() * 1000)
+        ].join('\t'));
+    }
+
+    _testFile(t, {
+        contents: lines.join('\n') + '\n',
+        desc: 'create instruction file with deletes that should miss',
+        filename: _instrFilename()
+    }, function _onProcessed(err, info) {
+        t.error(err, 'should be no error deleting files');
+
+        // Instruction file should have been deleted after it was processed.
+        t.notOk(fs.existsSync(info.filenamePath), info.filename +
+            ' should have been deleted');
+        t.equal(deleter.metrics.deleteCountMissing, 5,
+            'should have 5 missing deletes in metrics');
+
+        t.end();
+    });
+});
+
+// teardown / final checks
+
 
 test('stop GarbageDeleter', function _testStopDeleter(t) {
     deleter.stop(function _onStop(err) {
@@ -379,17 +454,24 @@ test('check metrics', function _testMetrics(t) {
         }
     }
 
+    // Uncomment this if you're adding some metrics and want to figure out what
+    // was actually set here:
+    //
+    // console.error(JSON.stringify(metrics, null, 2));
+    //
+
     tGreater('instructionFilesProcessed', 0);
-    tGreater('badInstructionFiles', 0);
-    tGreater('instructionFilesProcessed', 'badInstructionFiles');
+    tGreater('instructionFilesBad', 0);
+    tGreater('instructionFilesProcessed', 'instructionFilesBad');
     tGreater('instructionLinesProcessed', 0);
+    tGreater('deleteCountMissing', 0);
     tGreater('deleteCountTotal', 0);
-    tGreater('deleteTimeTotalSeconds', 0);
+    tGreater('deleteTimeSeconds', 0);
     tGreater('instructionFilesDeleted', 0);
     tGreater('deleteTimeMinSeconds', 0);
     tGreater('deleteTimeMaxSeconds', 0);
     tGreater('deleteTimeMaxSeconds', 'deleteTimeMinSeconds');
-    tGreater('deleteTimeTotalSeconds', 'deleteTimeMaxSeconds');
+    tGreater('deleteTimeSeconds', 'deleteTimeMaxSeconds');
 
     t.end();
 });
