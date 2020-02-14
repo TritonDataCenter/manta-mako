@@ -21,6 +21,17 @@ pipeline {
         timestamps()
     }
 
+    parameters {
+        string(
+            name: 'AGENT_PREBUILT_AGENT_BRANCH',
+            defaultValue: '',
+            description: 'The branch to use when including ' +
+                'agents in this component.<br/>' +
+                'The build defaults to the current branch, ' +
+                'and falls back to "master".'
+        )
+    }
+
     stages {
         stage('check') {
             steps{
