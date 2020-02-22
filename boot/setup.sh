@@ -7,7 +7,7 @@
 #
 
 #
-# Copyright 2019 Joyent, Inc.
+# Copyright 2020 Joyent, Inc.
 #
 
 set -o xtrace
@@ -169,6 +169,7 @@ manta_common_presetup
 echo "Adding local manifest directories"
 manta_add_manifest_dir "/opt/smartdc/mako"
 manta_add_manifest_dir "/opt/smartdc/minnow"
+manta_add_manifest_dir "/opt/smartdc/rebalancer-agent"
 
 echo "Updating manta compute id"
 manta_update_compute_id
