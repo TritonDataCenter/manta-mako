@@ -91,6 +91,7 @@ RELEASE_TARBALL := $(NAME)-pkg-$(STAMP).tar.gz
 RELSTAGEDIR		:= /tmp/$(NAME)-$(STAMP)
 
 ENGBLD_CHECK_COPYRIGHT_ARGS = -b mantav1
+BUILD_PLATFORM = 20151126T062538Z
 
 #
 # v8plus uses the CTF tools as part of its build, but they can safely be
