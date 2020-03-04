@@ -20,7 +20,7 @@
             <service_fmri value="svc:/milestone/multi-user:default" />
         </dependency>
 
-        <exec_method type="method" name="start" timeout_seconds="10" exec="/opt/smartdc/mako/build/node/bin/node --abort-on-uncaught-exception /opt/smartdc/mako/lib/garbage-deleter.js &amp;">
+        <exec_method type="method" name="start" timeout_seconds="10" exec="/opt/smartdc/mako/build/node/bin/node --abort-on-uncaught-exception /opt/smartdc/mako/bin/garbage-deleter.js &amp;">
             <method_context>
                 <method_environment>
                     <envvar name="HOME" value="/root" />

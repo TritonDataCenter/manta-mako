@@ -63,7 +63,6 @@ var logger = {
 };
 var test_dirs_created = false;
 
-
 function _createTestDirs(t) {
     var dir;
     var dirs = [
@@ -86,21 +85,26 @@ function _createTestDirs(t) {
 }
 
 function _deleteTestDirs(t) {
-    child_process.execFileSync('/usr/bin/rm', ['-fr', TEST_DIR], {});
-    t.ok(true, 'delete ' + TEST_DIR);
+    if (test_dirs_created) {
+        child_process.execFileSync('/usr/bin/rm', ['-fr', TEST_DIR], {});
+        t.ok(true, 'delete ' + TEST_DIR);
+    } else {
+        t.ok(true, 'no test dir created, nothing to delete');
+    }
 }
 
 function _instrFilename() {
-    var date = new Date().toISOString().replace(/[-\:]/g, '').replace(/\..*$/, 'Z');
+    var date = new Date()
+        .toISOString()
+        .replace(/[-:]/g, '')
+        .replace(/\..*$/, 'Z');
 
     // This matches what we're using in the consumers
-    return ([
-        date,
-        uuidv4(),
-        'X',
-        uuidv4(),
-        'mako-1.stor.test.joyent.us'
-    ].join('-') + '.instruction');
+    return (
+        [date, uuidv4(), 'X', uuidv4(), 'mako-1.stor.test.joyent.us'].join(
+            '-'
+        ) + '.instruction'
+    );
 }
 
 function _testFile(t, options, callback) {
@@ -118,17 +122,23 @@ function _testFile(t, options, callback) {
     var returnErr;
 
     deleteEmitter.once('processed', function _sawProcessed(obj) {
-        t.equal(obj.filename, filename,
-            'saw expected file processed by GarbageDeleter');
+        t.equal(
+            obj.filename,
+            filename,
+            'saw expected file processed by GarbageDeleter'
+        );
 
         if (obj.filename !== filename) {
-            returnErr = new VError({
-                info: {
-                    actualFilename: obj.filename,
-                    expectedFilename: filename
+            returnErr = new VError(
+                {
+                    info: {
+                        actualFilename: obj.filename,
+                        expectedFilename: filename
+                    },
+                    name: 'WrongFileError'
                 },
-                name: 'WrongFileError'
-            }, 'Saw unexpected file processed by GarbageDeleter');
+                'Saw unexpected file processed by GarbageDeleter'
+            );
         } else if (obj.err) {
             returnErr = obj.err;
         }
@@ -167,20 +177,21 @@ function _testFile(t, options, callback) {
 }
 
 function _randomString() {
-    return Math.random().toString(36).slice(2);
+    return Math.random()
+        .toString(36)
+        .slice(2);
 }
 
 function _processFileHook(obj) {
     deleteEmitter.emit('processed', obj);
 }
 
-
 // setup
 
-
 test('create testdirs', function _testCreateTestdirs(t) {
-    t.doesNotThrow(function _callCreator() {_createTestDirs(t);},
-        'create test directories');
+    t.doesNotThrow(function _callCreator() {
+        _createTestDirs(t);
+    }, 'create test directories');
     t.end();
 });
 
@@ -205,43 +216,54 @@ test('create GarbageDeleter', function _testCreateDeleter(t) {
     });
 });
 
-
 // test meat
 
-
 // Ensure that when the file is missing .instruction suffix, we reject it.
-test('test instruction file missing .instruction suffix',
-function _testNonInstructionFile(t) {
-
-    _testFile(t, {
-        contents: 'nothing really matters\n',
-        desc: 'create file missing .instruction suffix',
-        filename: _instrFilename() + '.trash'
-    }, function _onProcessed(err, info) {
-        t.equal(err.name, 'MissingInstructionSuffixError',
-            'should fail due to file missing .instruction suffix');
-        t.ok(fs.existsSync(info.filenameBadPath),
-            'file should have been moved to bad_instructions dir');
-        t.end();
-    });
-
+test('test instruction file missing .instruction suffix', function _testNonInstructionFile(t) {
+    _testFile(
+        t,
+        {
+            contents: 'nothing really matters\n',
+            desc: 'create file missing .instruction suffix',
+            filename: _instrFilename() + '.trash'
+        },
+        function _onProcessed(err, info) {
+            t.equal(
+                err.name,
+                'MissingInstructionSuffixError',
+                'should fail due to file missing .instruction suffix'
+            );
+            t.ok(
+                fs.existsSync(info.filenameBadPath),
+                'file should have been moved to bad_instructions dir'
+            );
+            t.end();
+        }
+    );
 });
 
 // Ensure that when the file is empty, we reject it.
 test('test empty instruction file', function _testEmptyInstructionFile(t) {
-
-    _testFile(t, {
-        contents: '',
-        desc: 'create empty file',
-        filename: _instrFilename()
-    }, function _onProcessed(err, info) {
-        t.equal(err.name, 'EmptyFileError',
-            'should fail due to file being empty');
-        t.ok(fs.existsSync(info.filenameBadPath),
-            'file should have been moved to bad_instructions dir');
-        t.end();
-    });
-
+    _testFile(
+        t,
+        {
+            contents: '',
+            desc: 'create empty file',
+            filename: _instrFilename()
+        },
+        function _onProcessed(err, info) {
+            t.equal(
+                err.name,
+                'EmptyFileError',
+                'should fail due to file being empty'
+            );
+            t.ok(
+                fs.existsSync(info.filenameBadPath),
+                'file should have been moved to bad_instructions dir'
+            );
+            t.end();
+        }
+    );
 });
 
 // Ensure that when the first instruction is too long, we reject it.
@@ -254,18 +276,26 @@ test('test long first instruction', function _testLongFirstInstruction(t) {
         longLine += _randomString();
     }
 
-    _testFile(t, {
-        contents: longLine + '\n',
-        desc: 'create file with long line',
-        filename: _instrFilename()
-    }, function _onProcessed(err, info) {
-        t.equal(err.name, 'LineTooLongError',
-            'should fail due to line being too long');
-        t.ok(fs.existsSync(info.filenameBadPath),
-            'file should have been moved to bad_instructions dir');
-        t.end();
-    });
-
+    _testFile(
+        t,
+        {
+            contents: longLine + '\n',
+            desc: 'create file with long line',
+            filename: _instrFilename()
+        },
+        function _onProcessed(err, info) {
+            t.equal(
+                err.name,
+                'LineTooLongError',
+                'should fail due to line being too long'
+            );
+            t.ok(
+                fs.existsSync(info.filenameBadPath),
+                'file should have been moved to bad_instructions dir'
+            );
+            t.end();
+        }
+    );
 });
 
 // Ensure instructions rejected if there are too many.
@@ -278,18 +308,26 @@ test('test too many instructions', function _testTooManyInstructions(t) {
         lines.push(uuidv4());
     }
 
-    _testFile(t, {
-        contents: lines.join('\n') + '\n',
-        desc: 'create file with too many lines',
-        filename: _instrFilename()
-    }, function _onProcessed(err, info) {
-        t.equal(err.name, 'TooManyLinesError',
-            'should fail from too many lines');
-        t.ok(fs.existsSync(info.filenameBadPath),
-            'file should have been moved to bad_instructions dir');
-        t.end();
-    });
-
+    _testFile(
+        t,
+        {
+            contents: lines.join('\n') + '\n',
+            desc: 'create file with too many lines',
+            filename: _instrFilename()
+        },
+        function _onProcessed(err, info) {
+            t.equal(
+                err.name,
+                'TooManyLinesError',
+                'should fail from too many lines'
+            );
+            t.ok(
+                fs.existsSync(info.filenameBadPath),
+                'file should have been moved to bad_instructions dir'
+            );
+            t.end();
+        }
+    );
 });
 
 // Ensure we handle case where instruction file is too large
@@ -304,30 +342,44 @@ test('test giant instruction file', function _testGiantInstructionFile(t) {
     }
 
     // just push the same line over and over until we've gone over the limit.
-    while (lines.length < (deleter.maxLines + 2)) {
+    while (lines.length < deleter.maxLines + 2) {
         lines.push(line.substr(0, deleter.maxLineLength));
     }
 
-    _testFile(t, {
-        contents: lines.join('\n') + '\n',
-        desc: 'create giant instructions file',
-        filename: _instrFilename()
-    }, function _onProcessed(err, info) {
-        t.equal(err.name, 'TooManyLinesError',
-            'should fail from too many lines');
+    _testFile(
+        t,
+        {
+            contents: lines.join('\n') + '\n',
+            desc: 'create giant instructions file',
+            filename: _instrFilename()
+        },
+        function _onProcessed(err, info) {
+            t.equal(
+                err.name,
+                'TooManyLinesError',
+                'should fail from too many lines'
+            );
 
-        // We write too many lines, and we want to make sure that the read
-        // stopped before reading all the lines (this prevents us from getting
-        // killed by enormous files). So we just make sure that the number of
-        // lines we wrote is larger than the number read.
-        t.ok(lines.length > info.lineCount, 'written lines (' + lines.length +
-            ') > read lines (' + info.lineCount + ')');
+            // We write too many lines, and we want to make sure that the read
+            // stopped before reading all the lines (this prevents us from getting
+            // killed by enormous files). So we just make sure that the number of
+            // lines we wrote is larger than the number read.
+            t.ok(
+                lines.length > info.lineCount,
+                'written lines (' +
+                    lines.length +
+                    ') > read lines (' +
+                    info.lineCount +
+                    ')'
+            );
 
-        t.ok(fs.existsSync(info.filenameBadPath),
-            'file should have been moved to bad_instructions dir');
-        t.end();
-    });
-
+            t.ok(
+                fs.existsSync(info.filenameBadPath),
+                'file should have been moved to bad_instructions dir'
+            );
+            t.end();
+        }
+    );
 });
 
 // Ensure files are actually deleted
@@ -340,12 +392,15 @@ test('test deletes actually work', function _testDeletesWork(t) {
 
     mantaDir = path.join(TEST_DIR_MANTA, mantaOwner);
 
-    t.doesNotThrow(function () {fs.mkdirSync(mantaDir);},
-        'create test /manta/' + mantaOwner + ' dir');
+    t.doesNotThrow(function() {
+        fs.mkdirSync(mantaDir);
+    }, 'create test /manta/' + mantaOwner + ' dir');
 
     for (idx = 0; idx < 10; idx++) {
         mantaObjects.push(uuidv4());
-        t.doesNotThrow( function () {
+
+        // eslint-disable-next-line no-loop-func
+        t.doesNotThrow(function() {
             fs.writeFileSync(path.join(mantaDir, mantaObjects[idx]));
         }, 'write manta file ' + mantaOwner + '/' + mantaObjects[idx]);
 
@@ -355,29 +410,43 @@ test('test deletes actually work', function _testDeletesWork(t) {
         //  fields[3] is the metadata shard and is ignored
         //  fields[4] is a number (size)
 
-        lines.push([
-            TEST_STORAGE_ID, mantaOwner, mantaObjects[idx], 'blah', Math.floor(Math.random() * 1000)
-        ].join('\t'));
+        lines.push(
+            [
+                TEST_STORAGE_ID,
+                mantaOwner,
+                mantaObjects[idx],
+                'blah',
+                Math.floor(Math.random() * 1000)
+            ].join('\t')
+        );
     }
 
-    _testFile(t, {
-        contents: lines.join('\n') + '\n',
-        desc: 'create file actual deletes',
-        filename: _instrFilename()
-    }, function _onProcessed(err, info) {
-        t.error(err, 'should be no error deleting files');
+    _testFile(
+        t,
+        {
+            contents: lines.join('\n') + '\n',
+            desc: 'create file actual deletes',
+            filename: _instrFilename()
+        },
+        function _onProcessed(err, info) {
+            t.error(err, 'should be no error deleting files');
 
-        for (idx = 0; idx < 10; idx++) {
-            t.notOk(fs.existsSync(path.join(mantaDir, mantaObjects[idx])),
-                mantaObjects[idx] + ' should have been deleted');
+            for (idx = 0; idx < 10; idx++) {
+                t.notOk(
+                    fs.existsSync(path.join(mantaDir, mantaObjects[idx])),
+                    mantaObjects[idx] + ' should have been deleted'
+                );
+            }
+
+            // Instruction file should have been deleted after it was processed.
+            t.notOk(
+                fs.existsSync(info.filenamePath),
+                info.filename + ' should have been deleted'
+            );
+
+            t.end();
         }
-
-        // Instruction file should have been deleted after it was processed.
-        t.notOk(fs.existsSync(info.filenamePath), info.filename +
-            ' should have been deleted');
-
-        t.end();
-    });
+    );
 });
 
 // Ensure it works to delete files that don't exist
@@ -391,8 +460,9 @@ test('test deleting non-existent files', function _testDeleteNonExistent(t) {
     mantaDir = path.join(TEST_DIR_MANTA, mantaOwner);
 
     // We'll create the dir but leave it empty
-    t.doesNotThrow(function () {fs.mkdirSync(mantaDir);},
-        'create test /manta/' + mantaOwner + ' dir');
+    t.doesNotThrow(function() {
+        fs.mkdirSync(mantaDir);
+    }, 'create test /manta/' + mantaOwner + ' dir');
 
     for (idx = 0; idx < 5; idx++) {
         mantaObjects.push(uuidv4());
@@ -403,30 +473,44 @@ test('test deleting non-existent files', function _testDeleteNonExistent(t) {
         //  fields[3] is the metadata shard and is ignored
         //  fields[4] is a number (size)
 
-        lines.push([
-            TEST_STORAGE_ID, mantaOwner, mantaObjects[idx], 'blah', Math.floor(Math.random() * 1000)
-        ].join('\t'));
+        lines.push(
+            [
+                TEST_STORAGE_ID,
+                mantaOwner,
+                mantaObjects[idx],
+                'blah',
+                Math.floor(Math.random() * 1000)
+            ].join('\t')
+        );
     }
 
-    _testFile(t, {
-        contents: lines.join('\n') + '\n',
-        desc: 'create instruction file with deletes that should miss',
-        filename: _instrFilename()
-    }, function _onProcessed(err, info) {
-        t.error(err, 'should be no error deleting files');
+    _testFile(
+        t,
+        {
+            contents: lines.join('\n') + '\n',
+            desc: 'create instruction file with deletes that should miss',
+            filename: _instrFilename()
+        },
+        function _onProcessed(err, info) {
+            t.error(err, 'should be no error deleting files');
 
-        // Instruction file should have been deleted after it was processed.
-        t.notOk(fs.existsSync(info.filenamePath), info.filename +
-            ' should have been deleted');
-        t.equal(deleter.metrics.deleteCountMissing, 5,
-            'should have 5 missing deletes in metrics');
+            // Instruction file should have been deleted after it was processed.
+            t.notOk(
+                fs.existsSync(info.filenamePath),
+                info.filename + ' should have been deleted'
+            );
+            t.equal(
+                deleter.metrics.deleteCountMissing,
+                5,
+                'should have 5 missing deletes in metrics'
+            );
 
-        t.end();
-    });
+            t.end();
+        }
+    );
 });
 
 // teardown / final checks
-
 
 test('stop GarbageDeleter', function _testStopDeleter(t) {
     deleter.stop(function _onStop(err) {
@@ -442,15 +526,25 @@ test('check metrics', function _testMetrics(t) {
     var metrics = deleter.metrics;
 
     function tGreater(metric, compare) {
-        if (typeof(compare) === 'number') {
-            t.ok(metrics[metric] > compare, metric + '(' + metrics[metric] +
-                ') > ' + compare);
-        } else if (typeof(compare) === 'string') {
-            t.ok(metrics[metric] > metrics[compare], metric +
-                '(' + metrics[metric] + ') > ' + compare + '(' +
-                metrics[compare] + ')');
+        if (typeof compare === 'number') {
+            t.ok(
+                metrics[metric] > compare,
+                metric + '(' + metrics[metric] + ') > ' + compare
+            );
+        } else if (typeof compare === 'string') {
+            t.ok(
+                metrics[metric] > metrics[compare],
+                metric +
+                    '(' +
+                    metrics[metric] +
+                    ') > ' +
+                    compare +
+                    '(' +
+                    metrics[compare] +
+                    ')'
+            );
         } else {
-            t.ok(false, 'bad tGreater type: ' + typeof(compare));
+            t.ok(false, 'bad tGreater type: ' + typeof compare);
         }
     }
 
@@ -477,15 +571,20 @@ test('check metrics', function _testMetrics(t) {
 });
 
 test('delete testdirs', function _testDeleteTestdirs(t) {
-    t.doesNotThrow(function _callDeleter() {_deleteTestDirs(t);},
-        'delete test directories');
+    t.doesNotThrow(function _callDeleter() {
+        _deleteTestDirs(t);
+    }, 'delete test directories');
     t.end();
 });
 
 test('dump logs', function _testDumpLogs(t) {
     var enabled = Boolean(process.env.DUMP_LOGS);
 
-    t.ok(true, 'log dump (env DUMP_LOGS is' + (!enabled ? ' not' : '') + ' set)' , {skip: !enabled});
+    t.ok(
+        true,
+        'log dump (env DUMP_LOGS is' + (!enabled ? ' not' : '') + ' set)',
+        {skip: !enabled}
+    );
 
     if (process.env.DUMP_LOGS) {
         console.log(JSON.stringify(logs, null, 2));
