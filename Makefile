@@ -25,8 +25,6 @@
 #
 # Tools
 #
-TAPE		:= ./node_modules/.bin/tape
-NPM		:= npm
 NGXSYMCHECK	= tools/ngx_symcheck
 
 #
@@ -71,6 +69,13 @@ include ./deps/eng/tools/mk/Makefile.node_modules.defs
 include ./deps/eng/tools/mk/Makefile.smf.defs
 include ./tools/mk/Makefile.nginx.defs
 
+ifneq ($(shell uname -s),SunOS)
+       NPM=npm
+       NODE=node
+       NPM_EXEC=$(shell which npm)
+       NODE_EXEC=$(shell which node)
+endif
+
 #
 # MG Variables
 #
@@ -110,11 +115,12 @@ fmt: | $(ESLINT)
 check-bash: $(NODE_EXEC)
 
 .PHONY: test
-test: $(TAPE)
-	@for f in test/*.test.js; do	\
-		echo "# $$f";	\
-		$(TAPE) $$f || exit 1; \
-	done
+test:
+	@echo "To run tests, run:"
+	@echo ""
+	@echo '    ./build/node/bin/node $$(find test/ -type f -name "*.js")'
+	@echo ""
+	@echo "from the /opt/smartdc/mako directory on a storage instance."
 
 .PHONY: scripts
 scripts: deps/manta-scripts/.git
@@ -147,7 +153,6 @@ release: all deps docs $(SMF_MANIFESTS) check-nginx
 	cp -r $(ROOT)/build/scripts $(RELSTAGEDIR)/root/opt/smartdc/mako/build/
 	mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/bin \
 		$(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/lib
-	cp -r $(ROOT)/build/node/share $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/
 	cp -r $(ROOT)/build/node/lib/dtrace $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/lib/
 	cp -r $(ROOT)/build/node/share $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/
 	cp $(ROOT)/build/node/bin/node $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/bin/
