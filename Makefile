@@ -154,7 +154,6 @@ release: all deps docs $(SMF_MANIFESTS) check-nginx
 	mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/bin \
 		$(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/lib
 	cp -r $(ROOT)/build/node/lib/dtrace $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/lib/
-	cp -r $(ROOT)/build/node/share $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/
 	cp $(ROOT)/build/node/bin/node $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/bin/
 	chmod 755 $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/bin/node
 	cp $(ROOT)/mako_rollup/target/release/mako_rollup \
