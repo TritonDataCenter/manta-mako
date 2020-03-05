@@ -47,8 +47,8 @@ var createMetricsManager = require('triton-metrics').createMetricsManager;
 var restify = require('restify');
 var vasync = require('vasync');
 
-var common = require('lib/common');
-var GarbageDeleter = require('lib/garbage-deleter');
+var common = require('../lib/common');
+var GarbageDeleter = require('../lib/garbage-deleter');
 
 var elapsedSince = common.elapsedSince;
 
