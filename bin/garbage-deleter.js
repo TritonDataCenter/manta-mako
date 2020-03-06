@@ -113,7 +113,7 @@ function main() {
     var beginning;
     var INSTRUCTION_DIR = DEFAULT_INSTRUCTION_DIR;
     var logger = createLogger({
-        level: 'trace', // XXX temporary
+        level: 'info',
         name: SERVICE_NAME
     });
 
