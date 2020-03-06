@@ -91,7 +91,7 @@ function loadConfig(opts, callback) {
         return;
     }
 
-    opts.log.trace(opts, 'Loading config from file.');
+    opts.log.trace({filename: opts.filename}, 'Loading config from file.');
 
     fs.readFile(opts.filename, function _onReadFile(err, data) {
         if (!err) {
@@ -112,7 +112,10 @@ function main() {
     var BAD_INSTRUCTION_DIR = DEFAULT_BAD_INSTRUCTION_DIR;
     var beginning;
     var INSTRUCTION_DIR = DEFAULT_INSTRUCTION_DIR;
-    var logger;
+    var logger = createLogger({
+        level: 'trace', // XXX temporary
+        name: SERVICE_NAME
+    });
 
     beginning = process.hrtime();
 
@@ -120,14 +123,6 @@ function main() {
         {
             arg: {},
             funcs: [
-                function _createLogger(_, cb) {
-                    logger = createLogger({
-                        level: 'trace', // XXX temporary
-                        name: SERVICE_NAME
-                    });
-
-                    cb();
-                },
                 function _waitDir(_, cb) {
                     var dirExists = false;
 
