@@ -356,8 +356,8 @@ test('test giant instruction file', function _testGiantInstructionFile(t) {
         function _onProcessed(err, info) {
             t.equal(
                 err.name,
-                'TooManyLinesError',
-                'should fail from too many lines'
+                'FileTooBigError',
+                'should fail from being too big'
             );
 
             // We write too many lines, and we want to make sure that the read
