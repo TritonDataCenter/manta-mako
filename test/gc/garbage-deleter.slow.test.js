@@ -449,6 +449,120 @@ test('test deletes actually work', function _testDeletesWork(t) {
     );
 });
 
+// Ensure buckets/DELETEv2 files are actually deleted
+test('test buckets deletes actually work', function _testBucketsDeletesWork(t) {
+    var bucketId = uuidv4();
+    var idx;
+    var lines = [];
+    var mantaDir;
+    var mantaObjects = [];
+    var mantaOwner = uuidv4();
+    var subDir;
+
+    mantaDir = path.join(TEST_DIR_MANTA, 'v2', mantaOwner, bucketId);
+
+    // Have to create lots of parent directories. But we ignore failure since
+    // if these don't work creating the final dir won't either and that will
+    // fail a test.
+    try {
+        fs.mkdirSync(TEST_DIR_MANTA);
+        // eslint-disable-next-line no-empty
+    } catch (_) {}
+    try {
+        fs.mkdirSync(path.join(TEST_DIR_MANTA, 'v2'));
+        // eslint-disable-next-line no-empty
+    } catch (_) {}
+    try {
+        fs.mkdirSync(path.join(TEST_DIR_MANTA, 'v2', mantaOwner));
+        // eslint-disable-next-line no-empty
+    } catch (_) {}
+
+    t.doesNotThrow(function() {
+        fs.mkdirSync(mantaDir);
+    }, 'create test dir ' + mantaDir);
+
+    for (idx = 0; idx < 10; idx++) {
+        mantaObjects.push(
+            uuidv4() +
+                ',' +
+                Math.random()
+                    .toString(16)
+                    .slice(2)
+        );
+
+        subDir = mantaObjects[idx].substr(0, 2);
+        // need to create yet more directories, might throw on dupe so we ignore
+        try {
+            fs.mkdirSync(path.join(mantaDir, subDir));
+            // eslint-disable-next-line no-empty
+        } catch (_) {}
+
+        // eslint-disable-next-line no-loop-func
+        t.doesNotThrow(function() {
+            fs.writeFileSync(path.join(mantaDir, subDir, mantaObjects[idx]));
+        }, 'write manta file ' +
+            mantaDir +
+            '/' +
+            subDir +
+            '/' +
+            mantaObjects[idx]);
+
+        //  fields[0] is our storageId
+        //  fields[1] is 'DELETEv2'
+        //  fields[2] is a path
+        //  fields[3] is the metadata shard and is ignored
+        //  fields[4] is a number (size)
+
+        lines.push(
+            [
+                TEST_STORAGE_ID,
+                'DELETEv2',
+                path.join(
+                    '/v2/',
+                    mantaOwner,
+                    bucketId,
+                    subDir,
+                    mantaObjects[idx]
+                ),
+                'blah',
+                Math.floor(Math.random() * 1000)
+            ].join('\t')
+        );
+    }
+
+    _testFile(
+        t,
+        {
+            contents: lines.join('\n') + '\n',
+            desc: 'create file actual deletes (buckets)',
+            filename: _instrFilename()
+        },
+        function _onProcessed(err, info) {
+            t.error(err, 'should be no error deleting buckets files');
+
+            for (idx = 0; idx < 10; idx++) {
+                subDir = mantaObjects[idx].substr(0, 2);
+                t.notOk(
+                    fs.existsSync(
+                        path.join(mantaDir, subDir, mantaObjects[idx])
+                    ),
+                    subDir +
+                        '/' +
+                        mantaObjects[idx] +
+                        ' should have been deleted'
+                );
+            }
+
+            // Instruction file should have been deleted after it was processed.
+            t.notOk(
+                fs.existsSync(info.filenamePath),
+                info.filename + ' should have been deleted'
+            );
+
+            t.end();
+        }
+    );
+});
 // Ensure it works to delete files that don't exist
 test('test deleting non-existent files', function _testDeleteNonExistent(t) {
     var idx;
