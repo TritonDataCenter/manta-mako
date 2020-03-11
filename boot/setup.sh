@@ -135,6 +135,8 @@ function manta_setup_nginx {
 
 function manta_setup_garbage_deleter {
     svccfg import /opt/smartdc/mako/smf/manifests/garbage-deleter.xml
+
+    manta_add_logadm_entry "garbage-deleter"
 }
 
 
