@@ -13,6 +13,7 @@
  * filesystem calls.
  */
 var child_process = require('child_process');
+var crypto = require('crypto');
 var EventEmitter = require('events');
 var fs = require('fs');
 var path = require('path');
@@ -180,6 +181,14 @@ function _randomString() {
     return Math.random()
         .toString(36)
         .slice(2);
+}
+
+// Random value for the "object path hash" part of the V2 storage path.
+function randomV2StorHash() {
+    return crypto
+        .createHash('md5')
+        .update(String(Math.random()))
+        .digest('hex');
 }
 
 function _processFileHook(obj) {
@@ -482,13 +491,7 @@ test('test buckets deletes actually work', function _testBucketsDeletesWork(t) {
     }, 'create test dir ' + mantaDir);
 
     for (idx = 0; idx < 10; idx++) {
-        mantaObjects.push(
-            uuidv4() +
-                ',' +
-                Math.random()
-                    .toString(16)
-                    .slice(2)
-        );
+        mantaObjects.push(uuidv4() + ',' + randomV2StorHash());
 
         subDir = mantaObjects[idx].substr(0, 2);
         // need to create yet more directories, might throw on dupe so we ignore
