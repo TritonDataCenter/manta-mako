@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright 2019 Joyent, Inc.
+# Copyright 2020 Joyent, Inc.
 #
 
 #
@@ -25,8 +25,6 @@
 #
 # Tools
 #
-TAPE		:= ./node_modules/.bin/tape
-NPM		:= npm
 NGXSYMCHECK	= tools/ngx_symcheck
 
 #
@@ -34,10 +32,8 @@ NGXSYMCHECK	= tools/ngx_symcheck
 #
 DOC_FILES	=
 BASH_FILES	= bin/manta-mako-adm $(NGXSYMCHECK)
-JS_FILES	:= $(shell find test bin -name '*.js')
-JSL_CONF_NODE	= tools/jsl.node.conf
-JSL_FILES_NODE	= $(JS_FILES)
 SMF_MANIFESTS	= smf/manifests/nginx.xml
+ESLINT_FILES := $(shell find bin lib test -name '*.js')
 
 #
 # Variables
@@ -67,18 +63,18 @@ ENGBLD_USE_BUILDIMAGE	= true
 ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)
 include ./deps/eng/tools/mk/Makefile.defs
 TOP ?= $(error Unable to access eng.git submodule Makefiles.)
-
-ifeq ($(shell uname -s),SunOS)
-	include ./deps/eng/tools/mk/Makefile.node_prebuilt.defs
-	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.defs
-	include ./deps/eng/tools/mk/Makefile.smf.defs
-else
-	NPM=npm
-	NODE=node
-	NPM_EXEC=$(shell which npm)
-	NODE_EXEC=$(shell which node)
-endif
+include ./deps/eng/tools/mk/Makefile.node_prebuilt.defs
+include ./deps/eng/tools/mk/Makefile.agent_prebuilt.defs
+include ./deps/eng/tools/mk/Makefile.node_modules.defs
+include ./deps/eng/tools/mk/Makefile.smf.defs
 include ./tools/mk/Makefile.nginx.defs
+
+ifneq ($(shell uname -s),SunOS)
+       NPM=npm
+       NODE=node
+       NPM_EXEC=$(shell which npm)
+       NODE_EXEC=$(shell which node)
+endif
 
 #
 # MG Variables
@@ -92,7 +88,7 @@ RELSTAGEDIR		:= /tmp/$(NAME)-$(STAMP)
 # overridden here so that this works in dev zones without them.
 # See marlin.git Makefile.
 #
-NPM_ENV          = MAKE_OVERRIDES="CTFCONVERT=/bin/true CTFMERGE=/bin/true"
+NPM_ENV          = NODE_ENV=production MAKE_OVERRIDES="CTFCONVERT=/bin/true CTFMERGE=/bin/true"
 
 #
 # Repo-specific targets
@@ -105,14 +101,26 @@ $(TAPE): | $(NPM_EXEC)
 
 CLEAN_FILES += $(TAPE) ./node_modules/ build
 
+check:: $(NODE_EXEC)
+
+# Just lint check (no style)
+.PHONY: lint
+lint: | $(ESLINT)
+	$(ESLINT) --rule 'prettier/prettier: off' $(ESLINT_FILES)
+
+.PHONY: fmt
+fmt: | $(ESLINT)
+	$(ESLINT) --fix $(ESLINT_FILES)
+
 check-bash: $(NODE_EXEC)
 
 .PHONY: test
-test: $(TAPE)
-	@for f in test/*.test.js; do	\
-		echo "# $$f";	\
-		$(TAPE) $$f || exit 1; \
-	done
+test:
+	@echo "To run tests, run:"
+	@echo ""
+	@echo '    ./build/node/bin/node $$(find test/ -type f -name "*.js")'
+	@echo ""
+	@echo "from the /opt/smartdc/mako directory on a storage instance."
 
 .PHONY: scripts
 scripts: deps/manta-scripts/.git
@@ -127,18 +135,27 @@ prepush: check-nginx
 .PHONY: release
 release: all deps docs $(SMF_MANIFESTS) check-nginx
 	@echo "Building $(RELEASE_TARBALL)"
+	@$(ROOT)/build/node/bin/node ./node_modules/.bin/kthxbai
 	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/mako
 	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/boot
 	@mkdir -p $(RELSTAGEDIR)/site
 	@touch $(RELSTAGEDIR)/site/.do-not-delete-me
 	cp -r $(ROOT)/bin \
 	    $(ROOT)/boot \
-	    $(ROOT)/build \
 	    $(ROOT)/build/nginx \
+	    $(ROOT)/lib \
 	    $(ROOT)/node_modules \
 	    $(ROOT)/sapi_manifests \
 	    $(ROOT)/smf \
+	    $(ROOT)/test \
 	    $(RELSTAGEDIR)/root/opt/smartdc/mako/
+	mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/mako/build
+	cp -r $(ROOT)/build/scripts $(RELSTAGEDIR)/root/opt/smartdc/mako/build/
+	mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/bin \
+		$(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/lib
+	cp -r $(ROOT)/build/node/lib/dtrace $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/lib/
+	cp $(ROOT)/build/node/bin/node $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/bin/
+	chmod 755 $(RELSTAGEDIR)/root/opt/smartdc/mako/build/node/bin/node
 	cp $(ROOT)/mako_rollup/target/release/mako_rollup \
 	    $(RELSTAGEDIR)/root/opt/smartdc/mako/bin/mako_rollup
 	chmod 755 $(RELSTAGEDIR)/root/opt/smartdc/mako/bin/mako_rollup
@@ -161,10 +178,8 @@ publish: release
 	cp $(ROOT)/$(RELEASE_TARBALL) $(ENGBLD_BITS_DIR)/$(NAME)/$(RELEASE_TARBALL)
 
 include ./deps/eng/tools/mk/Makefile.deps
-ifeq ($(shell uname -s),SunOS)
-	include ./deps/eng/tools/mk/Makefile.node_prebuilt.targ
-	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.targ
-	include ./deps/eng/tools/mk/Makefile.smf.targ
-endif
+include ./deps/eng/tools/mk/Makefile.node_prebuilt.targ
+include ./deps/eng/tools/mk/Makefile.agent_prebuilt.targ
+include ./deps/eng/tools/mk/Makefile.smf.targ
 include ./tools/mk/Makefile.nginx.targ
 include ./deps/eng/tools/mk/Makefile.targ

@@ -1,5 +1,6 @@
 {
     "name": "gc",
     "path": "/opt/smartdc/mako/etc/gc_config.json",
+    "post_cmd": "/usr/sbin/svcadm restart garbage-deleter",
     "master": true
 }

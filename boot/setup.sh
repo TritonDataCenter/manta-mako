@@ -133,6 +133,12 @@ function manta_setup_nginx {
         '/var/log/mako-{access,error}.log'
 }
 
+function manta_setup_garbage_deleter {
+    svccfg import /opt/smartdc/mako/smf/manifests/garbage-deleter.xml
+
+    manta_add_logadm_entry "garbage-deleter"
+}
+
 
 function manta_setup_rebalancer_agent {
     svccfg import /opt/smartdc/rebalancer-agent/smf/manifests/rebalancer-agent.xml
@@ -149,13 +155,11 @@ function manta_setup_crons {
     #Before you change cron scheduling, please consult the Mola System "Crons"
     # Overview documentation (manta-mola.git/docs/system-crons)
 
-    echo '15 12 * * * /opt/smartdc/mako/bin/mako_gc.sh >>/var/log/mako-gc.log 2>&1' >>$crontab
     echo '1 8 * * * /opt/smartdc/mako/bin/upload_mako_ls.sh >>/var/log/mako-ls-upload.log 2>&1' >>$crontab
 
     crontab $crontab
     [[ $? -eq 0 ]] || fatal "Unable import crons"
 
-    manta_add_logadm_entry "mako-gc" "/var/log" "exact"
     manta_add_logadm_entry "mako-ls-upload" "/var/log" "exact"
 }
 
@@ -185,12 +189,21 @@ manta_setup_minnow
 echo "Updating nginx"
 manta_setup_nginx
 
-echo "Updating crons for garbage collection, etc."
+echo "Setting up garbage-deleter"
+manta_setup_garbage_deleter
+
+echo "Updating crons"
 manta_setup_crons
 
 echo "Updating rebalancer"
 manta_setup_rebalancer_agent
 
 manta_common_setup_end
+
+# metricPorts are scraped by cmon-agent for prometheus metrics.
+#
+# 8881 is the metrics port for manta-garbage-deleter
+#
+mdata-put metricPorts "8881"
 
 exit 0
