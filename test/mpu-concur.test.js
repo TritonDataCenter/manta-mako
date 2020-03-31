@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 /*
@@ -23,7 +23,6 @@ var mod_http = require('http');
 var mod_crypto = require('crypto');
 var mod_vasync = require('vasync');
 var mod_uuid = require('node-uuid');
-var mod_jsprim = require('jsprim');
 
 var mod_common = require('./common.js');
 
@@ -33,41 +32,47 @@ var MPU_MAX_SIZE = 50 * 1024 * 1024;
 var MPU_COMMIT = {};
 var MPU_MD5;
 
-test('setup', function (t) {
-        t.plan(0);
-        mod_common.mpu_setup();
+test('setup', function(t) {
+    t.plan(0);
+    mod_common.mpu_setup();
 
-        MPU_COMMIT['version'] = 1;
-        MPU_COMMIT['nbytes'] = 0;
-        MPU_COMMIT['account'] = mod_uuid.v4();
-        MPU_COMMIT['objectId'] = mod_uuid.v4();
-        MPU_COMMIT['parts'] = [];
-        console.log(sprintf('# account: %s, object: %s', MPU_COMMIT['account'],
-            MPU_COMMIT['objectId']));
-        t.end();
+    MPU_COMMIT['version'] = 1;
+    MPU_COMMIT['nbytes'] = 0;
+    MPU_COMMIT['account'] = mod_uuid.v4();
+    MPU_COMMIT['objectId'] = mod_uuid.v4();
+    MPU_COMMIT['parts'] = [];
+    console.log(
+        sprintf(
+            '# account: %s, object: %s',
+            MPU_COMMIT['account'],
+            MPU_COMMIT['objectId']
+        )
+    );
+    t.end();
 });
 
-test('stream temporary files', function (t) {
-        var i, data, size, parts, indexes, md5, buf;
+test('stream temporary files', function(t) {
+    var i, data, size, parts, indexes, md5, buf;
 
-        data = [];
-        parts = [];
-        indexes = [];
-        md5 = mod_crypto.createHash('md5');
-        for (i = 0; i < MPU_NFILES; i++) {
-                size = MPU_MAX_SIZE;
-                MPU_COMMIT.nbytes += size;
-                buf = mod_crypto.randomBytes(size);
-                data.push(buf);
-                md5.update(buf);
-                indexes.push(i);
-                parts.push(mod_uuid.v4());
-        }
-        MPU_COMMIT.parts = parts;
-        MPU_MD5 = md5.digest('base64');
+    data = [];
+    parts = [];
+    indexes = [];
+    md5 = mod_crypto.createHash('md5');
+    for (i = 0; i < MPU_NFILES; i++) {
+        size = MPU_MAX_SIZE;
+        MPU_COMMIT.nbytes += size;
+        buf = mod_crypto.randomBytes(size);
+        data.push(buf);
+        md5.update(buf);
+        indexes.push(i);
+        parts.push(mod_uuid.v4());
+    }
+    MPU_COMMIT.parts = parts;
+    MPU_MD5 = md5.digest('base64');
 
-        mod_vasync.forEachParallel({
-            func: function (arg, callback) {
+    mod_vasync.forEachParallel(
+        {
+            func: function(arg, callback) {
                 var req, opts, defopts;
 
                 defopts = mod_common.mpu_default_opts();
@@ -76,110 +81,125 @@ test('stream temporary files', function (t) {
                 opts.port = defopts.port;
                 opts.method = 'PUT';
                 opts.path = sprintf('/%s/%s', MPU_COMMIT.account, parts[arg]);
-                req = mod_http.request(opts, function (res) {
-                        t.equal(res.statusCode, 201);
-                        res.resume();
-                        callback(null);
+                req = mod_http.request(opts, function(res) {
+                    t.equal(res.statusCode, 201);
+                    res.resume();
+                    callback(null);
                 });
 
-                req.on('error', function (err) {
-                        t.fail(sprintf('received error: %r', err));
-                        callback(err);
+                req.on('error', function(err) {
+                    t.fail(sprintf('received error: %r', err));
+                    callback(err);
                 });
                 req.write(data[arg]);
                 req.end();
-
-            }, inputs: indexes
-        }, function (err, results) {
-                t.end();
-        });
+            },
+            inputs: indexes
+        },
+        function() {
+            t.end();
+        }
+    );
 });
 
-test('issue concurrent mpu commits', function (t) {
-        var opts, inputs, i;
+test('issue concurrent mpu commits', function(t) {
+    var opts, inputs, i;
 
-        opts = mod_common.mpu_default_opts();
-        opts['agent'] = false;
-        inputs = [];
-        for (i = 0; i < MPU_NCOMMITS; i++) {
-                inputs.push(opts);
-        }
+    opts = mod_common.mpu_default_opts();
+    opts['agent'] = false;
+    inputs = [];
+    for (i = 0; i < MPU_NCOMMITS; i++) {
+        inputs.push(opts);
+    }
 
-        mod_vasync.forEachParallel({
-            func: function (arg, callback) {
-                var req = mod_http.request(opts, function (res) {
-                        t.equal(res.statusCode, 204);
-                        t.equal(res.headers['x-joyent-computed-content-md5'],
-                            MPU_MD5);
-                        res.resume();
-                        callback(null);
+    mod_vasync.forEachParallel(
+        {
+            func: function(_, callback) {
+                var req = mod_http.request(opts, function(res) {
+                    t.equal(res.statusCode, 204);
+                    t.equal(
+                        res.headers['x-joyent-computed-content-md5'],
+                        MPU_MD5
+                    );
+                    res.resume();
+                    callback(null);
                 });
-                req.on('error', function (err) {
-                        t.fail(sprintf('received error: %r', err));
-                        callback(null);
+                req.on('error', function(err) {
+                    t.fail(sprintf('received error: %r', err));
+                    callback(null);
                 });
                 req.write(JSON.stringify(MPU_COMMIT));
                 req.end();
-            }, inputs: inputs
-        }, function (err, results) {
-                t.end();
-        });
+            },
+            inputs: inputs
+        },
+        function() {
+            t.end();
+        }
+    );
 });
 
-test('verify temporary files are removed', function (t) {
-        mod_vasync.forEachParallel({
-            func: function (arg, callback) {
+test('verify temporary files are removed', function(t) {
+    mod_vasync.forEachParallel(
+        {
+            func: function(arg, callback) {
                 var req, opts;
 
                 opts = mod_common.mako_default_opts();
                 opts.method = 'GET';
                 opts.path = sprintf('/%s/%s', MPU_COMMIT['account'], arg);
-                req = mod_http.request(opts, function (res) {
-                        t.ok(res.statusCode, 404);
-                        res.resume();
-                        callback(null);
+                req = mod_http.request(opts, function(res) {
+                    t.ok(res.statusCode, 404);
+                    res.resume();
+                    callback(null);
                 });
 
-                req.on('error', function (err) {
-                        t.fail(sprintf('received error: %r', err));
-                        callback(err);
+                req.on('error', function(err) {
+                    t.fail(sprintf('received error: %r', err));
+                    callback(err);
                 });
                 req.end();
-            }, inputs: MPU_COMMIT['parts']
-        }, function (err, results) {
-                t.end();
-        });
+            },
+            inputs: MPU_COMMIT['parts']
+        },
+        function() {
+            t.end();
+        }
+    );
 });
 
-test('verify md5 on GET', function (t) {
-        var req, opts;
-        opts = mod_common.mako_default_opts();
-        opts.method = 'GET';
-        opts.path = sprintf('/%s/%s', MPU_COMMIT['account'],
-            MPU_COMMIT['objectId']);
+test('verify md5 on GET', function(t) {
+    var req, opts;
+    opts = mod_common.mako_default_opts();
+    opts.method = 'GET';
+    opts.path = sprintf(
+        '/%s/%s',
+        MPU_COMMIT['account'],
+        MPU_COMMIT['objectId']
+    );
 
-        req = mod_http.request(opts, function (res) {
-                var md5;
-                t.ok(res.statusCode, 200);
-                if (res.statusCode != 200) {
-                        t.end();
-                        return;
-                }
+    req = mod_http.request(opts, function(res) {
+        var md5;
+        t.ok(res.statusCode, 200);
+        if (res.statusCode !== 200) {
+            t.end();
+            return;
+        }
 
-                md5 = mod_crypto.createHash('md5');
-                res.on('data', function (buf) {
-                        md5.update(buf);
-                });
-
-                res.on('end', function () {
-                        t.equal(md5.digest('base64'), MPU_MD5);
-                        t.end();
-                });
+        md5 = mod_crypto.createHash('md5');
+        res.on('data', function(buf) {
+            md5.update(buf);
         });
 
-        req.on('error', function (err) {
-                t.fail(sprintf('received error: %r', err));
-                t.end();
+        res.on('end', function() {
+            t.equal(md5.digest('base64'), MPU_MD5);
+            t.end();
         });
-        req.end();
+    });
+
+    req.on('error', function(err) {
+        t.fail(sprintf('received error: %r', err));
+        t.end();
+    });
+    req.end();
 });
