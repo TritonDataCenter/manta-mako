@@ -8,6 +8,8 @@
  * Copyright 2020 Joyent, Inc.
  */
 use std::collections::HashMap;
+use std::ffi::OsStr;
+use std::path::{Component};
 use std::time::{Instant, SystemTime};
 use walkdir::WalkDir;
 
@@ -27,7 +29,24 @@ fn main() {
 
         // We only care about files, so we intentionally do nothing with directories
         if metadata.file_type().is_file() {
-            let account_uuid = &entry.path().parent().unwrap().to_str().unwrap()[7..];
+            let account_uuid;
+            let mut components = entry.path().components();
+            let next;
+
+            assert_eq!(components.next(), Some(Component::RootDir));
+            assert_eq!(components.next(), Some(Component::Normal(OsStr::new("manta"))));
+
+            next = components.next();
+
+            if next == Some(Component::Normal(OsStr::new("v2"))) {
+                // If the path starts with /manta/v2, the next component is the owner_uuid
+                account_uuid = components.next().unwrap().as_os_str().to_str().unwrap();
+            } else {
+                // If the path starts with /manta/ but then has a uuid instead
+                // of `v2`, that uuid is the creator uuid and this is a
+                // mantav1 or mantav2 dir-style path.
+                account_uuid = next.unwrap().as_os_str().to_str().unwrap();
+            }
 
             match accounts.get_mut(account_uuid) {
                 Some(account) => {
