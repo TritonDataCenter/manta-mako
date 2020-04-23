@@ -41,22 +41,22 @@ ESLINT_FILES := $(shell find bin lib test -name '*.js')
 
 # TODO: Use this to download or verify install of expected rust version
 # NOTE: copied from what manta-buckets-mdapi uses
-RUST_PREBUILT_VERSION = 1.35.0
+RUST_PREBUILT_VERSION = 1.40.0
 
 NAME			= mako
-NODE_PREBUILT_VERSION	= v8.16.1
+NODE_PREBUILT_VERSION	= v8.17.0
 NODE_PREBUILT_TAG	= zone64
-# minimal-64 19.2.0
-NODE_PREBUILT_IMAGE	= 7f4d80b4-9d70-11e9-9388-6b41834cbeeb
+# minimal-64 19.4.0
+NODE_PREBUILT_IMAGE	= 5417ab20-3156-11ea-8b19-2b66f5e7a439
 
 #
 # Stuff used for buildimage
 #
-# triton-origin-x86_64-19.2.0
-BASE_IMAGE_UUID		= a0d5f456-ba0f-4b13-bfdc-5e9323837ca7
+# triton-origin-x86_64-19.4.0
+BASE_IMAGE_UUID		= 59ba2e5e-976f-4e09-8aac-a4a7ef0395f5
 BUILDIMAGE_NAME		= mantav2-storage
 BUILDIMAGE_DESC		= Manta Storage
-BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-5.0.0
+BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-5.0.1
 AGENTS = amon config minnow registrar rebalancer
 
 ENGBLD_USE_BUILDIMAGE	= true
