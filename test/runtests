@@ -38,5 +38,6 @@
 # Default to 5 minutes because, at time of writing, mpu-large.test.js can
 # take around 3 minutes to run.
 [[ -n "$TAP_TIMEOUT" ]] || TAP_TIMEOUT=300
+export TAP_TIMEOUT
 
 ./node_modules/.bin/tap -j $TEST_JOBS -o ./test.tap test/**.test.js
