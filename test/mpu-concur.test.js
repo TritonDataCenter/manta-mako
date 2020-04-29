@@ -27,7 +27,7 @@ var mod_common = require('./common.js');
 
 var MPU_NCOMMITS = 25;
 var MPU_NFILES = 10;
-var MPU_MAX_SIZE = 50 * 1024 * 1024;
+var MPU_MAX_SIZE = 5 * 1024 * 1024;
 var MPU_COMMIT = {};
 var MPU_MD5;
 
