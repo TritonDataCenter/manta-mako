@@ -112,23 +112,14 @@ fmt: | $(ESLINT)
 
 check-bash: $(NODE_EXEC)
 
-#
-# We depend on 'check' here since that does the work to 'npm install' the
-# devDependencies needed for the test suite.
-#
 .PHONY: test
-test: check
+test:
 	@echo "To run tests, run:"
 	@echo ""
 	@echo "    export PATH=./build/node/bin:\$$PATH"
 	@echo '    node $$(find test/ -type f -name "*.js")'
 	@echo ""
 	@echo "from the /opt/smartdc/mako directory on a storage instance."
-	@echo ""
-	@echo "Note that the 'tape' node module is required to run the mpu"
-	@echo "tests, so you should rsync the updated node_modules directory"
-	@echo "from your build zone into your storage zone before running the"
-	@echo "tests."
 
 .PHONY: scripts
 scripts: deps/manta-scripts/.git
