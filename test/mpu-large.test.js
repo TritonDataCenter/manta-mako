@@ -16,13 +16,12 @@
  * should if built correctly).
  */
 
-var mod_test = require('tape');
-var test = mod_test.test;
+var test = require('@smaller/tap').test;
 var mod_extsprintf = require('extsprintf');
 var sprintf = mod_extsprintf.sprintf;
 var mod_http = require('http');
 var mod_crypto = require('crypto');
-var mod_uuid = require('node-uuid');
+var uuidv4 = require('uuid/v4');
 
 var mod_common = require('./common.js');
 
@@ -34,7 +33,7 @@ var LMPU_MD5_OBJ;
 function lmpu_generate_file(t, size) {
     var req, opts, mpustream, name;
 
-    name = mod_uuid.v4();
+    name = uuidv4();
     LMPU_COMMIT.parts.push(name);
     opts = mod_common.mako_default_opts();
     opts.method = 'PUT';
@@ -56,60 +55,69 @@ function lmpu_generate_file(t, size) {
     mpustream.pipe(req);
 }
 
-test('setup', function(t) {
-    t.plan(0);
-    mod_common.mpu_setup();
 
-    LMPU_COMMIT['version'] = 1;
-    LMPU_COMMIT['nbytes'] = LMPU_LARGE_SIZE + 2 * LMPU_SMALL_SIZE;
-    LMPU_COMMIT['account'] = mod_uuid.v4();
-    LMPU_COMMIT['objectId'] = mod_uuid.v4();
-    LMPU_COMMIT['parts'] = [];
-    console.log(
-        sprintf(
-            '# account: %s, object: %s',
-            LMPU_COMMIT['account'],
-            LMPU_COMMIT['objectId']
-        )
-    );
-    LMPU_MD5_OBJ = mod_crypto.createHash('md5');
-    t.end();
-});
+// This test takes 3 minutes or more to run. That hits the typical 30s default
+// `tap` timeout. Unfortunately this `{timeout: ...}` doesn't seem to override
+// the `tap` timeout value, so we also need a TAP_TIMEOUT=300.
+test('mpu large', {timeout: 5 * 60 * 1000}, function (suite) {
 
-test('generating large file', function(t) {
-    lmpu_generate_file(t, LMPU_LARGE_SIZE);
-});
+    suite.test('setup', function(t) {
+        t.plan(0);
+        mod_common.mpu_setup();
 
-test('generating small file 1', function(t) {
-    lmpu_generate_file(t, LMPU_SMALL_SIZE);
-});
-
-test('generating small file 2', function(t) {
-    lmpu_generate_file(t, LMPU_SMALL_SIZE);
-});
-
-test('calculate md5', function(t) {
-    LMPU_COMMIT.md5 = LMPU_MD5_OBJ.digest('base64');
-    t.ok(LMPU_COMMIT.md5);
-    t.end();
-});
-
-test('commit', function(t) {
-    var req, opts;
-
-    opts = mod_common.mpu_default_opts();
-    req = mod_http.request(opts, function(res) {
-        t.equal(res.statusCode, 204);
-        t.equal(res.headers['x-joyent-computed-content-md5'], LMPU_COMMIT.md5);
-        res.resume();
+        LMPU_COMMIT['version'] = 1;
+        LMPU_COMMIT['nbytes'] = LMPU_LARGE_SIZE + 2 * LMPU_SMALL_SIZE;
+        LMPU_COMMIT['account'] = uuidv4();
+        LMPU_COMMIT['objectId'] = uuidv4();
+        LMPU_COMMIT['parts'] = [];
+        console.log(
+            sprintf(
+                '# account: %s, object: %s',
+                LMPU_COMMIT['account'],
+                LMPU_COMMIT['objectId']
+            )
+        );
+        LMPU_MD5_OBJ = mod_crypto.createHash('md5');
         t.end();
     });
 
-    req.on('error', function(err) {
-        t.fail(sprintf('received error: %r', err));
+    suite.test('generating large file', function(t) {
+        lmpu_generate_file(t, LMPU_LARGE_SIZE);
+    });
+
+    suite.test('generating small file 1', function(t) {
+        lmpu_generate_file(t, LMPU_SMALL_SIZE);
+    });
+
+    suite.test('generating small file 2', function(t) {
+        lmpu_generate_file(t, LMPU_SMALL_SIZE);
+    });
+
+    suite.test('calculate md5', function(t) {
+        LMPU_COMMIT.md5 = LMPU_MD5_OBJ.digest('base64');
+        t.ok(LMPU_COMMIT.md5);
         t.end();
     });
 
-    req.write(JSON.stringify(LMPU_COMMIT));
-    req.end();
+    suite.test('commit', function(t) {
+        var req, opts;
+
+        opts = mod_common.mpu_default_opts();
+        req = mod_http.request(opts, function(res) {
+            t.equal(res.statusCode, 204);
+            t.equal(res.headers['x-joyent-computed-content-md5'], LMPU_COMMIT.md5);
+            res.resume();
+            t.end();
+        });
+
+        req.on('error', function(err) {
+            t.fail(sprintf('received error: %r', err));
+            t.end();
+        });
+
+        req.write(JSON.stringify(LMPU_COMMIT));
+        req.end();
+    });
+
+    suite.end();
 });

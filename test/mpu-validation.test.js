@@ -12,8 +12,7 @@
  * Test basic MPU validation (generally error cases)
  */
 
-var mod_test = require('tape');
-var test = mod_test.test;
+var test = require('@smaller/tap').test;
 var mod_extsprintf = require('extsprintf');
 var sprintf = mod_extsprintf.sprintf;
 var mod_vasync = require('vasync');

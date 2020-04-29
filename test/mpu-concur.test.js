@@ -15,14 +15,13 @@
  * that they are.
  */
 
-var mod_test = require('tape');
-var test = mod_test.test;
+var test = require('@smaller/tap').test;
 var mod_extsprintf = require('extsprintf');
 var sprintf = mod_extsprintf.sprintf;
 var mod_http = require('http');
 var mod_crypto = require('crypto');
 var mod_vasync = require('vasync');
-var mod_uuid = require('node-uuid');
+var uuidv4 = require('uuid/v4');
 
 var mod_common = require('./common.js');
 
@@ -38,8 +37,8 @@ test('setup', function(t) {
 
     MPU_COMMIT['version'] = 1;
     MPU_COMMIT['nbytes'] = 0;
-    MPU_COMMIT['account'] = mod_uuid.v4();
-    MPU_COMMIT['objectId'] = mod_uuid.v4();
+    MPU_COMMIT['account'] = uuidv4();
+    MPU_COMMIT['objectId'] = uuidv4();
     MPU_COMMIT['parts'] = [];
     console.log(
         sprintf(
@@ -65,7 +64,7 @@ test('stream temporary files', function(t) {
         data.push(buf);
         md5.update(buf);
         indexes.push(i);
-        parts.push(mod_uuid.v4());
+        parts.push(uuidv4());
     }
     MPU_COMMIT.parts = parts;
     MPU_MD5 = md5.digest('base64');
