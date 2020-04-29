@@ -63,18 +63,18 @@ ENGBLD_USE_BUILDIMAGE	= true
 ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)
 include ./deps/eng/tools/mk/Makefile.defs
 TOP ?= $(error Unable to access eng.git submodule Makefiles.)
-include ./deps/eng/tools/mk/Makefile.node_prebuilt.defs
-include ./deps/eng/tools/mk/Makefile.agent_prebuilt.defs
+ifeq ($(shell uname -s),SunOS)
+    include ./deps/eng/tools/mk/Makefile.node_prebuilt.defs
+    include ./deps/eng/tools/mk/Makefile.agent_prebuilt.defs
+else
+    NPM=npm
+    NODE=node
+    NPM_EXEC=$(shell which npm)
+    NODE_EXEC=$(shell which node)
+endif
 include ./deps/eng/tools/mk/Makefile.node_modules.defs
 include ./deps/eng/tools/mk/Makefile.smf.defs
 include ./tools/mk/Makefile.nginx.defs
-
-ifneq ($(shell uname -s),SunOS)
-       NPM=npm
-       NODE=node
-       NPM_EXEC=$(shell which npm)
-       NODE_EXEC=$(shell which node)
-endif
 
 #
 # MG Variables
@@ -99,7 +99,7 @@ all: $(NODE_EXEC) $(NGINX_EXEC) $(REPO_DEPS) scripts build-rollup
 
 CLEAN_FILES += ./node_modules/ build
 
-check:: $(NODE_EXEC)
+check:: | $(NODE_EXEC)
 
 # Just lint check (no style)
 .PHONY: lint
@@ -176,8 +176,10 @@ publish: release
 	cp $(ROOT)/$(RELEASE_TARBALL) $(ENGBLD_BITS_DIR)/$(NAME)/$(RELEASE_TARBALL)
 
 include ./deps/eng/tools/mk/Makefile.deps
-include ./deps/eng/tools/mk/Makefile.node_prebuilt.targ
-include ./deps/eng/tools/mk/Makefile.agent_prebuilt.targ
+ifeq ($(shell uname -s),SunOS)
+	include ./deps/eng/tools/mk/Makefile.node_prebuilt.targ
+	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.targ
+endif
 include ./deps/eng/tools/mk/Makefile.smf.targ
 include ./tools/mk/Makefile.nginx.targ
 include ./deps/eng/tools/mk/Makefile.targ
