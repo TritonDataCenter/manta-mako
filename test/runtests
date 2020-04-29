@@ -31,6 +31,8 @@
 #       # OR:  TAP_TIMEOUT=600 /node_modules/.bin/tap test/**/*.test.js
 #
 
+TOP=$(cd $(dirname $0)/../; pwd)
+
 # Default to running serially. At time of writing the mako tests are too
 # flaky to run in parallel.
 [[ -n "$TEST_JOBS" ]] || TEST_JOBS=1
@@ -40,4 +42,4 @@
 [[ -n "$TAP_TIMEOUT" ]] || TAP_TIMEOUT=300
 export TAP_TIMEOUT
 
-./node_modules/.bin/tap -j $TEST_JOBS -o ./test.tap test/**.test.js
+$TOP/node_modules/.bin/tap -j "$TEST_JOBS" -o $TOP/test.tap $TOP/test/**.test.js
