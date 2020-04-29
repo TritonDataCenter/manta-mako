@@ -116,8 +116,7 @@ check-bash: $(NODE_EXEC)
 test:
 	@echo "To run tests, run:"
 	@echo ""
-	@echo "    export PATH=./build/node/bin:\$$PATH"
-	@echo '    node $$(find test/ -type f -name "*.js")'
+	@echo "    ./test/runtests"
 	@echo ""
 	@echo "from the /opt/smartdc/mako directory on a storage instance."
 

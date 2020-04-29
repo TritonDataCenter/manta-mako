@@ -31,23 +31,6 @@ details on major Manta versions.
 - [`mantav1`](../../tree/mantav1/) - For development of mantav1, the long
   term support maintenance version of Manta.
 
-## Repository
-
-    bin/            Commands available in $PATH, including commands that work
-                    in conjunction with Manta Garbage Collection
-                    (manta-mola.git)
-    boot/           Configuration scripts on zone setup.
-    deps/           Git submodules and/or commited 3rd-party deps should go
-                    here. See "node_modules/" for node.js deps.
-    node_modules/   Node.js deps, either populated at build time or commited.
-                    See Managing Dependencies.
-    sapi_manifests/ SAPI manifests for zone configuration.
-    smf/manifests   SMF manifests
-    test/           Test suite (using node-tap)
-    tools/          Miscellaneous dev/upgrade/deployment tools and data.
-    Makefile
-    package.json    npm module info (holds the project version)
-    README.md
 
 ## Working with the nginx git submodule
 
@@ -80,27 +63,21 @@ $ git diff --cached #to check the submodule git SHA
 
 Then you can commit, test, and push like any other change.
 
+
 ## Testing
 
-To run the mako test suite, you need to be able to run nginx in your
-zone. The following should be run as a root user (or by a user who can
-use pfexec as the primary administrator):
+Mako tests use node-tap. Test files are all named "test/**.test.js".
+In general all the tests are *integration* tests, i.e. they require a running
+mako (aka "storage") instance against which to run. To run all tests on a
+mako instance:
 
-1. `gmake release`
-2. Manually edit `build/nginx/conf/nginx.conf` to clean up the sapi manifest
-2. `mkdir /manta`
-3. `chmod 770 /manta`
-4. `chown nobody:staff /manta`
-5. Manually start nginx, by running `build/nginx/sbin/nginx`
-6. Run the test suite by running `gmake test`
-7. When finished, kill the nginx processes with something like `pkill -9 nginx`
-8. When finished, clean out any left over temporary data via `rm -rf /manta/*`
+    ssh DC-HEADNODE-GZ      # login to the headnode
+    manta-login storage     # login to a storage instance
+    /opt/smartdc/mako/test/runtests
 
-Note, that the tests default to looking for nginx on
-`http://localhost:80/`. This can be overriden by setting the `MAKO_HOST`
-and `MAKO_PORT` environment variables. For example if you set
-`MAKO_PORT=8080` and `MAKO_HOST=1.2.3.4`, we would instead look for a
-server at `http://1.2.3.4:8080/`.
+See the comment in [runtests](./test/runtests) for various use cases for running
+the tests.
+
 
 ## SAPI Tunables
 

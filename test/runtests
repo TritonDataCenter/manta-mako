@@ -1,0 +1,42 @@
+#!/bin/bash
+
+#
+# The following will run all tests inside a deployed mako (aka "storage")
+# instance:
+#
+#       ./test/runtests
+#       # OR:  ./node_modules/.bin/tap test/**.test.js
+#
+#
+# 'runtests' is just a super-light shim around calling the 'tap' runner with
+# some defaults. See <https://node-tap.org/docs/cli/> for a number of 'TAP_*'
+# environment variables that can be used to tweak how tests are run. Some common
+# use cases are:
+#
+# - Force TAP format output:
+#
+#       TAP=1 ./test/runtests
+#       # OR:  TAP=1 ./node_modules/.bin/tap test/**/*.test.js
+#
+# - Run a single test file. The nice thing about 'node-tap'-based tests is that
+#   they run independently without any special code-loading environment.
+#
+#       ./node_modules/.bin/tap test/foo.test.js
+#       # OR:  node test/foo.test.js
+#
+# - Set a different test timeout. The default 'tap' timeout is 30s. The default
+#   set by this script is 300s.
+#
+#       TAP_TIMEOUT=600 ./test/runtests
+#       # OR:  TAP_TIMEOUT=600 /node_modules/.bin/tap test/**/*.test.js
+#
+
+# Default to running serially. At time of writing the mako tests are too
+# flaky to run in parallel.
+[[ -n "$TEST_JOBS" ]] || TEST_JOBS=1
+
+# Default to 5 minutes because, at time of writing, mpu-large.test.js can
+# take around 3 minutes to run.
+[[ -n "$TAP_TIMEOUT" ]] || TAP_TIMEOUT=300
+
+./node_modules/.bin/tap -j $TEST_JOBS -o ./test.tap test/**.test.js
