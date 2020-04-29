@@ -32,6 +32,7 @@
 #
 
 TOP=$(cd $(dirname $0)/../; pwd)
+PATH=/opt/smartdc/mako/build/node/bin:$PATH
 
 # Default to running serially. At time of writing the mako tests are too
 # flaky to run in parallel.
