@@ -94,12 +94,10 @@ NPM_ENV          = NODE_ENV=production MAKE_OVERRIDES="CTFCONVERT=/bin/true CTFM
 # Repo-specific targets
 #
 .PHONY: all
-all: $(NODE_EXEC) $(NGINX_EXEC) $(TAPE) $(REPO_DEPS) scripts build-rollup
-	$(NPM) install
-$(TAPE): | $(NPM_EXEC)
-	$(NPM) install
+all: $(NODE_EXEC) $(NGINX_EXEC) $(REPO_DEPS) scripts build-rollup
+	$(NPM) install --production
 
-CLEAN_FILES += $(TAPE) ./node_modules/ build
+CLEAN_FILES += ./node_modules/ build
 
 check:: $(NODE_EXEC)
 
@@ -114,13 +112,23 @@ fmt: | $(ESLINT)
 
 check-bash: $(NODE_EXEC)
 
+#
+# We depend on 'check' here since that does the work to 'npm install' the
+# devDependencies needed for the test suite.
+#
 .PHONY: test
-test:
+test: check
 	@echo "To run tests, run:"
 	@echo ""
-	@echo '    ./build/node/bin/node $$(find test/ -type f -name "*.js")'
+	@echo "    export PATH=./build/node/bin:\$$PATH"
+	@echo '    node $$(find test/ -type f -name "*.js")'
 	@echo ""
 	@echo "from the /opt/smartdc/mako directory on a storage instance."
+	@echo ""
+	@echo "Note that the 'tape' node module is required to run the mpu"
+	@echo "tests, so you should rsync the updated node_modules directory"
+	@echo "from your build zone into your storage zone before running the"
+	@echo "tests."
 
 .PHONY: scripts
 scripts: deps/manta-scripts/.git

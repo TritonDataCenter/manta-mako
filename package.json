@@ -12,10 +12,10 @@
                 "kthxbai": "0.4.0",
                 "node-uuid": "^1.4.8",
                 "restify": "4.3.4",
-                "tape": "^4.13.2",
                 "triton-metrics": "1.0.2",
                 "uuid": "3.3.3",
                 "vasync": "2.2.0",
+                "tape": "^4.13.2",
                 "verror": "1.10.0"
         },
         "devDependencies": {
