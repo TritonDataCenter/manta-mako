@@ -55,12 +55,10 @@ function lmpu_generate_file(t, size) {
     mpustream.pipe(req);
 }
 
-
 // This test takes 3 minutes or more to run. That hits the typical 30s default
 // `tap` timeout. Unfortunately this `{timeout: ...}` doesn't seem to override
 // the `tap` timeout value, so we also need a TAP_TIMEOUT=300.
-test('mpu large', {timeout: 5 * 60 * 1000}, function (suite) {
-
+test('mpu large', {timeout: 5 * 60 * 1000}, function(suite) {
     suite.test('setup', function(t) {
         t.plan(0);
         mod_common.mpu_setup();
@@ -105,7 +103,10 @@ test('mpu large', {timeout: 5 * 60 * 1000}, function (suite) {
         opts = mod_common.mpu_default_opts();
         req = mod_http.request(opts, function(res) {
             t.equal(res.statusCode, 204);
-            t.equal(res.headers['x-joyent-computed-content-md5'], LMPU_COMMIT.md5);
+            t.equal(
+                res.headers['x-joyent-computed-content-md5'],
+                LMPU_COMMIT.md5
+            );
             res.resume();
             t.end();
         });

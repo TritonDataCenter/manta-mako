@@ -40,12 +40,9 @@ test('setup', function(t) {
     MPU_COMMIT['account'] = uuidv4();
     MPU_COMMIT['objectId'] = uuidv4();
     MPU_COMMIT['parts'] = [];
-    console.log(
-        sprintf(
-            '# account: %s, object: %s',
-            MPU_COMMIT['account'],
-            MPU_COMMIT['objectId']
-        )
+    t.comment(
+        `# account: ${MPU_COMMIT['account']}, ` +
+            `object: ${MPU_COMMIT['objectId']}`
     );
     t.end();
 });

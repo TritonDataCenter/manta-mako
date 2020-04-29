@@ -36,7 +36,7 @@ function assertFilesSame(first, second, t, callback) {
         t.equal(err, null, first + ' and ' + second + ' are the same');
         return callback(null);
     });
-};
+}
 
 function createFile(name, size, callback) {
     var blocks = size / 131072;
@@ -49,7 +49,7 @@ function createFile(name, size, callback) {
             return callback(null);
         }
     );
-};
+}
 
 function getNonexistentObject(t) {
     options.method = 'GET';
@@ -68,7 +68,7 @@ function getNonexistentObject(t) {
         t.ok(false, 'problem with request: ' + err.message);
         t.end();
     });
-};
+}
 
 test('setup', function(t) {
     var port;
@@ -199,7 +199,11 @@ test('100s of small files', function(t) {
                                 });
 
                                 req.on('error', function(suberr) {
-                                    t.ok(false, 'problem with request: ' + suberr.message);
+                                    t.ok(
+                                        false,
+                                        'problem with request: ' +
+                                            suberr.message
+                                    );
                                     t.end();
                                 });
 
