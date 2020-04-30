@@ -31,14 +31,14 @@ var options = {
     path: '/' + FILENAME
 };
 
-var assertFilesSame = function(first, second, t, callback) {
+function assertFilesSame(first, second, t, callback) {
     cp.exec('diff ' + first + ' ' + second, function(err) {
         t.equal(err, null, first + ' and ' + second + ' are the same');
         return callback(null);
     });
-};
+}
 
-var createFile = function(name, size, callback) {
+function createFile(name, size, callback) {
     var blocks = size / 131072;
     cp.exec(
         'dd if=/dev/urandom of=' + name + ' count=' + blocks + ' bs=128k',
@@ -49,15 +49,15 @@ var createFile = function(name, size, callback) {
             return callback(null);
         }
     );
-};
+}
 
-var getNonexistentObject = function(t) {
+function getNonexistentObject(t) {
     options.method = 'GET';
     options.path = '/' + FILENAME;
 
     var req = http.request(options, function(res) {
-        console.log('STATUS: ' + res.statusCode);
-        console.log('HEADERS: ' + JSON.stringify(res.headers));
+        t.comment('STATUS: ' + res.statusCode);
+        t.comment('HEADERS: ' + JSON.stringify(res.headers));
         res.resume();
         t.equal(res.statusCode, 404);
         t.end();
@@ -65,11 +65,10 @@ var getNonexistentObject = function(t) {
     req.end();
 
     req.on('error', function(err) {
-        console.log('problem with request: ' + err.message);
-        t.ok(false, err.message);
+        t.ok(false, 'problem with request: ' + err.message);
         t.end();
     });
-};
+}
 
 test('setup', function(t) {
     var port;
@@ -107,16 +106,15 @@ test('put 10 MiB object', function(t) {
     options.path = '/' + FILENAME;
 
     var req = http.request(options, function(res) {
-        console.log('STATUS: ' + res.statusCode);
-        console.log('HEADERS: ' + JSON.stringify(res.headers));
+        t.comment('STATUS: ' + res.statusCode);
+        t.comment('HEADERS: ' + JSON.stringify(res.headers));
         res.resume();
         t.equal(res.statusCode, 201);
         t.end();
     });
 
     req.on('error', function(err) {
-        console.log('problem with request: ' + err.message);
-        t.ok(false, err.message);
+        t.ok(false, 'problem with request: ' + err.message);
         t.end();
     });
 
@@ -131,8 +129,8 @@ test('get 10 MiB object', function(t) {
     options.path = '/' + FILENAME;
 
     var req = http.request(options, function(res) {
-        console.log('STATUS: ' + res.statusCode);
-        console.log('HEADERS: ' + JSON.stringify(res.headers));
+        t.comment('STATUS: ' + res.statusCode);
+        t.comment('HEADERS: ' + JSON.stringify(res.headers));
 
         t.equal(res.statusCode, 200);
 
@@ -148,8 +146,7 @@ test('get 10 MiB object', function(t) {
     req.end();
 
     req.on('error', function(err) {
-        console.log('problem with request: ' + err.message);
-        t.ok(false, err.message);
+        t.ok(false, 'problem with request: ' + err.message);
         t.end();
     });
 });
@@ -202,11 +199,11 @@ test('100s of small files', function(t) {
                                 });
 
                                 req.on('error', function(suberr) {
-                                    console.log(
+                                    t.ok(
+                                        false,
                                         'problem with request: ' +
                                             suberr.message
                                     );
-                                    t.ok(false, suberr.message);
                                     t.end();
                                 });
 

@@ -41,40 +41,40 @@ ESLINT_FILES := $(shell find bin lib test -name '*.js')
 
 # TODO: Use this to download or verify install of expected rust version
 # NOTE: copied from what manta-buckets-mdapi uses
-RUST_PREBUILT_VERSION = 1.35.0
+RUST_PREBUILT_VERSION = 1.40.0
 
 NAME			= mako
-NODE_PREBUILT_VERSION	= v8.16.1
+NODE_PREBUILT_VERSION	= v8.17.0
 NODE_PREBUILT_TAG	= zone64
-# minimal-64 19.2.0
-NODE_PREBUILT_IMAGE	= 7f4d80b4-9d70-11e9-9388-6b41834cbeeb
+# minimal-64 19.4.0
+NODE_PREBUILT_IMAGE	= 5417ab20-3156-11ea-8b19-2b66f5e7a439
 
 #
 # Stuff used for buildimage
 #
-# triton-origin-x86_64-19.2.0
-BASE_IMAGE_UUID		= a0d5f456-ba0f-4b13-bfdc-5e9323837ca7
+# triton-origin-x86_64-19.4.0
+BASE_IMAGE_UUID		= 59ba2e5e-976f-4e09-8aac-a4a7ef0395f5
 BUILDIMAGE_NAME		= mantav2-storage
 BUILDIMAGE_DESC		= Manta Storage
-BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-5.0.0
+BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-5.0.1
 AGENTS = amon config minnow registrar rebalancer
 
 ENGBLD_USE_BUILDIMAGE	= true
 ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)
 include ./deps/eng/tools/mk/Makefile.defs
 TOP ?= $(error Unable to access eng.git submodule Makefiles.)
-include ./deps/eng/tools/mk/Makefile.node_prebuilt.defs
-include ./deps/eng/tools/mk/Makefile.agent_prebuilt.defs
+ifeq ($(shell uname -s),SunOS)
+    include ./deps/eng/tools/mk/Makefile.node_prebuilt.defs
+    include ./deps/eng/tools/mk/Makefile.agent_prebuilt.defs
+else
+    NPM=npm
+    NODE=node
+    NPM_EXEC=$(shell which npm)
+    NODE_EXEC=$(shell which node)
+endif
 include ./deps/eng/tools/mk/Makefile.node_modules.defs
 include ./deps/eng/tools/mk/Makefile.smf.defs
 include ./tools/mk/Makefile.nginx.defs
-
-ifneq ($(shell uname -s),SunOS)
-       NPM=npm
-       NODE=node
-       NPM_EXEC=$(shell which npm)
-       NODE_EXEC=$(shell which node)
-endif
 
 #
 # MG Variables
@@ -94,14 +94,12 @@ NPM_ENV          = NODE_ENV=production MAKE_OVERRIDES="CTFCONVERT=/bin/true CTFM
 # Repo-specific targets
 #
 .PHONY: all
-all: $(NODE_EXEC) $(NGINX_EXEC) $(TAPE) $(REPO_DEPS) scripts build-rollup
-	$(NPM) install
-$(TAPE): | $(NPM_EXEC)
-	$(NPM) install
+all: $(NODE_EXEC) $(NGINX_EXEC) $(REPO_DEPS) scripts build-rollup
+	$(NPM) install --production
 
-CLEAN_FILES += $(TAPE) ./node_modules/ build
+CLEAN_FILES += ./node_modules/ build
 
-check:: $(NODE_EXEC)
+check:: | $(NODE_EXEC)
 
 # Just lint check (no style)
 .PHONY: lint
@@ -118,7 +116,7 @@ check-bash: $(NODE_EXEC)
 test:
 	@echo "To run tests, run:"
 	@echo ""
-	@echo '    ./build/node/bin/node $$(find test/ -type f -name "*.js")'
+	@echo "    ./test/runtests"
 	@echo ""
 	@echo "from the /opt/smartdc/mako directory on a storage instance."
 
@@ -178,8 +176,10 @@ publish: release
 	cp $(ROOT)/$(RELEASE_TARBALL) $(ENGBLD_BITS_DIR)/$(NAME)/$(RELEASE_TARBALL)
 
 include ./deps/eng/tools/mk/Makefile.deps
-include ./deps/eng/tools/mk/Makefile.node_prebuilt.targ
-include ./deps/eng/tools/mk/Makefile.agent_prebuilt.targ
+ifeq ($(shell uname -s),SunOS)
+	include ./deps/eng/tools/mk/Makefile.node_prebuilt.targ
+	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.targ
+endif
 include ./deps/eng/tools/mk/Makefile.smf.targ
 include ./tools/mk/Makefile.nginx.targ
 include ./deps/eng/tools/mk/Makefile.targ
