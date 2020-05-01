@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2019 Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 @Library('jenkins-joylib@v1.0.3') _
@@ -13,7 +13,7 @@
 pipeline {
 
     agent {
-        label joyCommonLabels(image_ver: '18.1.0')
+        label joyCommonLabels(image_ver: '19.4.0')
     }
 
     options {
