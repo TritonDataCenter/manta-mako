@@ -8,7 +8,7 @@
  * Copyright 2020 Joyent, Inc.
  */
 
-@Library('jenkins-joylib@v1.0.3') _
+@Library('jenkins-joylib@v1.0.5') _
 
 pipeline {
 
