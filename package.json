@@ -10,6 +10,7 @@
                 "bunyan": "1.8.12",
                 "carrier": "0.1.7",
                 "manta": "5.2.1",
+                "moray": "3.7.0",
                 "posix-getopt": "1.0.0",
                 "restify": "4.3.4",
                 "triton-metrics": "1.0.2",
