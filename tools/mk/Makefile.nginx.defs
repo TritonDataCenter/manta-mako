@@ -24,7 +24,6 @@ NGINX_CONFIG_FLAGS += \
 	--with-http_dav_module \
 	--with-http_stub_status_module \
 	--with-threads \
-	--with-http_mpu_commit \
 	--with-cc-opt="-std=gnu99 -I/opt/local/include" \
 	--with-ld-opt="-L/opt/local/lib -R/opt/local/lib -lumem"
 
