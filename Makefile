@@ -45,18 +45,19 @@ SMF_MANIFESTS	= smf/manifests/nginx.xml
 # Variables
 #
 NAME			= mako
-NODE_PREBUILT_VERSION	= v0.10.48
-NODE_PREBUILT_TAG	= zone
-# minimal-multiarch 18.1.0
-NODE_PREBUILT_IMAGE	= 1ad363ec-3b83-11e8-8521-2f68a4a34d5d
+NODE_PREBUILT_VERSION	= v8.17.0
+NODE_PREBUILT_TAG	= zone64
+# minimal-64 19.4.0
+NODE_PREBUILT_IMAGE	= 5417ab20-3156-11ea-8b19-2b66f5e7a439
 
 #
 # Stuff used for buildimage
 #
-BASE_IMAGE_UUID		= b6ea7cb4-6b90-48c0-99e7-1d34c2895248
+# triton-origin-x86_64-19.4.0
+BASE_IMAGE_UUID		= 59ba2e5e-976f-4e09-8aac-a4a7ef0395f5
 BUILDIMAGE_NAME		= mantav1-storage
 BUILDIMAGE_DESC		= Manta Storage
-BUILDIMAGE_PKGSRC	= pcre-8.42 findutils-4.6.0nb1 gawk-4.1.4nb1
+BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-5.0.1
 AGENTS = amon config minnow registrar
 
 #
@@ -91,7 +92,6 @@ RELEASE_TARBALL := $(NAME)-pkg-$(STAMP).tar.gz
 RELSTAGEDIR		:= /tmp/$(NAME)-$(STAMP)
 
 ENGBLD_CHECK_COPYRIGHT_ARGS = -b mantav1
-BUILD_PLATFORM = 20151126T062538Z
 
 #
 # v8plus uses the CTF tools as part of its build, but they can safely be
