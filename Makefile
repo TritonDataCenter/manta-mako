@@ -60,13 +60,6 @@ BUILDIMAGE_DESC		= Manta Storage
 BUILDIMAGE_PKGSRC	= pcre-8.43 findutils-4.6.0nb2 gawk-5.0.1
 AGENTS = amon config minnow registrar
 
-#
-# Force minnow to be built from this specific branch, needed
-# because mantav1 should not mix/match with mantav2 changes
-#
-$(MINNOW_PREBUILT_TARGETS): AGENT_PREBUILT_BRANCH=mantav1
-
-
 ENGBLD_USE_BUILDIMAGE	= true
 ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)
 include ./deps/eng/tools/mk/Makefile.defs
@@ -167,3 +160,9 @@ ifeq ($(shell uname -s),SunOS)
 endif
 include ./tools/mk/Makefile.nginx.targ
 include ./deps/eng/tools/mk/Makefile.targ
+
+#
+# Force minnow to be built from this specific branch, needed
+# because mantav1 should not mix/match with mantav2 changes
+#
+$(MINNOW_PREBUILT_TARGETS): AGENT_PREBUILT_BRANCH=mantav1
