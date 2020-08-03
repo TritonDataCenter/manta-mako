@@ -141,9 +141,15 @@ function manta_setup_garbage_deleter {
 
 
 function manta_setup_rebalancer_agent {
+    local metrics_port
+
+    metrics_port=$(json -f ${METADATA} REBALANCER_AGENT_METRICS_PORT)
+    [[ -n "${metrics_port}" ]] || metrics_port='8878'
+
     svccfg import /opt/smartdc/rebalancer-agent/smf/manifests/rebalancer-agent.xml
 
     manta_add_logadm_entry "rebalancer-agent"
+    mdata-put metricsPorts "${metrics_port}"
 }
 
 
