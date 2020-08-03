@@ -149,7 +149,7 @@ function manta_setup_rebalancer_agent {
     svccfg import /opt/smartdc/rebalancer-agent/smf/manifests/rebalancer-agent.xml
 
     manta_add_logadm_entry "rebalancer-agent"
-    mdata-put metricsPorts "${metrics_port}"
+    mdata-put metricPorts "${metrics_port}"
 }
 
 
