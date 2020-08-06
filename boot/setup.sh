@@ -210,6 +210,6 @@ manta_common_setup_end
 #
 # 8881 is the metrics port for manta-garbage-deleter
 #
-mdata-put metricPorts "8881, ${REBALANCER_AGENT_METRICS_PORT}"
+mdata-put metricPorts "8881,${REBALANCER_AGENT_METRICS_PORT}"
 
 exit 0
