@@ -6,13 +6,14 @@
 
 <!--
     Copyright 2020 Joyent, Inc.
+    Copyright 2023 MNX Cloud, Inc.
 -->
 
 # manta-mako
 
-This repository is part of the Joyent Manta project.  For contribution
+This repository is part of the Triton Data Center Manta project.  For contribution
 guidelines, issues, and general documentation, visit the main
-[Manta](http://github.com/joyent/manta) project page.
+[Manta](http://github.com/TritonDataCenter/manta) project page.
 
 Mako can refer to this repository or the zone in Manta that stores Manta
 objects.  The zone that stores objects is also known as a "storage" zone.
@@ -23,7 +24,7 @@ to/from disk.
 
 There are currently two active branches of this repository, for the two
 active major versions of Manta. See the [mantav2 overview
-document](https://github.com/joyent/manta/blob/master/docs/mantav2.md) for
+document](https://github.com/TritonDataCenter/manta/blob/master/docs/mantav2.md) for
 details on major Manta versions.
 
 - [`master`](../../tree/master/) - For development of mantav2, the latest
@@ -34,7 +35,7 @@ details on major Manta versions.
 
 ## Working with the nginx git submodule
 
-mako uses [Joyent's fork of nginx](https://github.com/joyent/nginx)
+mako uses [Triton Data Center's fork of nginx](https://github.com/TritonDataCenter/nginx)
 which has been modified to support some additional features:
 
 * Calculates the md5 checksum of the streamed body and reports it.
@@ -44,13 +45,13 @@ which has been modified to support some additional features:
 
 To understand how the nginx repository is managed and how we cut
 releases for use in mako, please read the
-[README](https://github.com/joyent/nginx).  When updating the nginx
+[README](https://github.com/TritonDataCenter/nginx).  When updating the nginx
 submodule in mako, the first step is to identify the release tag that
 you should use. Once that's been identified, you can update the
 submodule using something like the following flow:
 
 ```
-$ git clone git@github.com:joyent/manta-mako.git
+$ git clone git@github.com:TritonDataCenter/manta-mako.git
 $ cd mako/
 $ git submodule init
 $ git submodule update

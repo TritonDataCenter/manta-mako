@@ -6,6 +6,7 @@
 
 #
 # Copyright 2020 Joyent, Inc.
+# Copyright 2023 MNX Cloud, Inc.
 #
 
 #
@@ -39,9 +40,10 @@ ESLINT_FILES := $(shell find bin lib test -name '*.js')
 # Variables
 #
 
-# TODO: Use this to download or verify install of expected rust version
-# NOTE: copied from what manta-buckets-mdapi uses
-RUST_PREBUILT_VERSION = 1.40.0
+RUST_TOOLCHAIN = 1.40.0
+
+# Rust < 1.49 must specify sun-solaris target:
+RUST_BOOTSTRAP_TARGET = x86_64-sun-solaris
 
 NAME			= mako
 NODE_PREBUILT_VERSION	= v8.17.0
@@ -75,6 +77,7 @@ endif
 include ./deps/eng/tools/mk/Makefile.node_modules.defs
 include ./deps/eng/tools/mk/Makefile.smf.defs
 include ./tools/mk/Makefile.nginx.defs
+include ./deps/eng/tools/mk/Makefile.rust.defs
 
 #
 # MG Variables
@@ -166,7 +169,7 @@ release: all deps docs $(SMF_MANIFESTS) check-nginx
 	@rm -rf $(RELSTAGEDIR)
 
 .PHONY: build-rollup
-build-rollup:
+build-rollup: | $(CARGO_EXEC)
 	(cd mako_rollup && $(CARGO) build --release)
 	find mako_rollup -ls
 
@@ -183,3 +186,4 @@ endif
 include ./deps/eng/tools/mk/Makefile.smf.targ
 include ./tools/mk/Makefile.nginx.targ
 include ./deps/eng/tools/mk/Makefile.targ
+include ./deps/eng/tools/mk/Makefile.rust.targ

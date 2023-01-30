@@ -6,6 +6,7 @@
 
 /*
  * Copyright 2020 Joyent, Inc.
+ * Copyright 2023 MNX Cloud, Inc.
  */
 use std::collections::HashMap;
 use std::path::Component;
@@ -72,7 +73,9 @@ fn main() {
         }
     }
 
-    println!("# HELP used_bytes The current number of bytes used on a mako\n# TYPE used_bytes gauge");
+    println!(
+        "# HELP used_bytes The current number of bytes used on a mako\n# TYPE used_bytes gauge"
+    );
 
     for (k, v) in accounts.iter() {
         println!("used_bytes{{account=\"{}\"}} {}", k, v.bytes);

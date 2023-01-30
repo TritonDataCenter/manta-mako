@@ -1,12 +1,12 @@
 [submodule "deps/restdown"]
 	path = deps/restdown
-	url = https://github.com/trentm/restdown.git
+	url = https://github.com/TritonDataCenter/restdown.git
 [submodule "deps/nginx"]
 	path = deps/nginx
-	url = https://github.com/joyent/nginx.git
+	url = https://github.com/TritonDataCenter/nginx.git
 [submodule "deps/manta-scripts"]
 	path = deps/manta-scripts
-	url = https://github.com/joyent/manta-scripts.git
+	url = https://github.com/TritonDataCenter/manta-scripts.git
 [submodule "deps/eng"]
-	url = https://github.com/joyent/eng.git
+	url = https://github.com/TritonDataCenter/eng.git
 	path = deps/eng
