@@ -1,8 +1,8 @@
 {
         "name": "mako",
         "description": "Storage backend for Manta",
-        "version": "2.1.0",
-        "author": "Joyent (joyent.com)",
+        "version": "2.1.1",
+        "author": "MNX Cloud (mnx.io)",
         "license": "MPL-2.0",
         "private": true,
         "dependencies": {
