@@ -6,6 +6,7 @@
 
 /*
  * Copyright 2020 Joyent, Inc.
+ * Copyright 2024 MNX Cloud, Inc.
  */
 
 /*
@@ -18,8 +19,8 @@
  *  - execute the instructions (delete the specified files)
  *  - delete the instruction file after all instructions have been executed
  *
- * See: https://github.com/joyent/manta-eng/tree/master/garbage for more
- * details.
+ * See: https://github.com/TritonDataCenter/manta-eng/tree/master/garbage for
+ * more details.
  *
  * When an invalid instruction file is found, including:
  *
