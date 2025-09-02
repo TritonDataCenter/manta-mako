@@ -90,6 +90,20 @@ http {
 			client_max_body_size 	512K;
 		}
 
+		location /mpu/v2/commit
+		{
+			client_body_temp_path	/manta/nginx_temp;
+			mpu_v2_enabled		on;
+			mpu_v2_pool		mpu;
+			mpu_v2_root		/manta;
+			#
+			# v2 commit handles buckets-api multipart uploads
+			# with enhanced JSON format supporting bucket metadata
+			# and part validation. Uses same size limits as v1.
+			#
+			client_max_body_size 	512K;
+		}
+
 		error_page 500 502 503 504 /50x.html;
 
 		location = /50x.html {
